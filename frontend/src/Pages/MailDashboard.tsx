@@ -651,7 +651,7 @@ export default function MailDashboard() {
             ) : null}
           </div>
           {loading ? (
-            <div className="flex-1 overflow-auto">
+            <div className="flex-1 overflow-y-auto overflow-x-hidden">
               <ul className="divide-y divide-neutral-900 animate-pulse">
                 {Array.from({ length: 10 }).map((_, i) => (
                   <SkeletonRow key={i} />
@@ -1814,9 +1814,9 @@ function sanitizeHtmlForDark(html: string): string {
 function EmailHtmlFrame({ html }: { html: string }) {
   // Encapsulate email HTML in its own container with reset styles so it doesn't affect app fonts
   return (
-    <div className="max-w-none">
+    <div className="max-w-none overflow-x-hidden">
       <div
-        className="prose prose-invert max-w-none [&_*]:!text-[unset] [&_*]:!leading-relaxed [&_h1]:!text-[1.125rem] [&_h2]:!text-[1.0625rem] [&_h3]:!text-[1rem] [&_p]:!text-[0.9375rem] [&_a]:!no-underline [&_a]:!text-blue-400 [&_img]:max-w-full"
+        className="prose prose-invert max-w-none break-words [&_*]:!text-[unset] [&_*]:!leading-relaxed [&_h1]:!text-[1.125rem] [&_h2]:!text-[1.0625rem] [&_h3]:!text-[1rem] [&_p]:!text-[0.9375rem] [&_a]:!no-underline [&_a]:!text-blue-400 [&_a]:break-words [&_img]:max-w-full [&_img]:h-auto [&_pre]:whitespace-pre-wrap [&_code]:break-words [&_table]:w-full [&_table]:table-fixed [&_td]:break-words [&_th]:break-words [&_iframe]:max-w-full [&_iframe]:w-full"
         style={{ fontSize: 'inherit', lineHeight: 'inherit' }}
         dangerouslySetInnerHTML={{ __html: html }}
       />
