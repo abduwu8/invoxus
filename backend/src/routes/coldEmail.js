@@ -32,32 +32,28 @@ ${String(keywords)}
 Return strict JSON with fields: subject (<=70 chars), body (4-7 short sentences in 2-3 paragraphs, plain text, no markdown),
 and a one-sentence reason summarizing the value proposition.`;
 
-    // Prefer a fast, widely-available Groq model and force JSON output
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000);
-    let text = '{}';
+    // Call Groq without unsupported fetch signal; enforce timeout by Promise.race
+    const request = groq.chat.completions.create({
+      model: process.env.GROQ_MODEL || 'openai/gpt-oss-20b',
+      messages: [
+        { role: 'system', content: 'You are a helpful assistant. Always return STRICT JSON.' },
+        { role: 'user', content: prompt },
+      ],
+      temperature: 0.4,
+      max_tokens: 600,
+    })
+    const withTimeout = new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 15000))
+    let text = '{}'
     try {
-      const completion = await groq.chat.completions.create({
-        model: process.env.GROQ_MODEL || 'llama-3.1-8b-instant',
-        messages: [
-          { role: 'system', content: 'You are a helpful assistant. Always return STRICT JSON.' },
-          { role: 'user', content: prompt },
-        ],
-        temperature: 0.4,
-        max_tokens: 600,
-        response_format: { type: 'json_object' },
-        // @ts-ignore Groq SDK forwards this to fetch
-        signal: controller.signal,
-      });
-      text = completion.choices?.[0]?.message?.content || '{}';
+      const completion = await Promise.race([request, withTimeout])
+      // @ts-ignore
+      text = completion?.choices?.[0]?.message?.content || '{}'
     } catch (err) {
-      if (err?.name === 'AbortError') {
-        console.warn('Groq completion timed out');
+      if (String(err?.message || '').includes('timeout')) {
+        console.warn('Groq completion timed out')
       } else {
-        console.warn('Groq completion error:', err?.response?.data || err?.message || err);
+        console.warn('Groq completion error:', err?.response?.data || err?.message || err)
       }
-    } finally {
-      clearTimeout(timeout);
     }
 
     let draft = {};

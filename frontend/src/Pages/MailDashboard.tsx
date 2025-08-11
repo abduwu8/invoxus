@@ -390,7 +390,7 @@ export default function MailDashboard() {
           </div>
         ) : null}
         {/* Left sidebar (desktop) */}
-        <aside className="hidden md:flex w-64 border-r border-neutral-800 p-3 flex-col gap-4 bg-neutral-950/40">
+        <aside className="hidden md:flex h-full w-64 border-r border-neutral-800 p-3 flex-col bg-neutral-950/40">
           <SidebarContent
             profile={profile}
             leftItems={leftItems}
@@ -1245,27 +1245,29 @@ function CategoryManager({
 }) {
   const [newName, setNewName] = useState('')
   return (
-    <div className="px-2">
-      <div className="rounded-2xl border border-neutral-800 bg-neutral-950/60 p-2 flex flex-col gap-1">
-        {categories.map((c) => (
-          <div key={c._id} className="flex items-center justify-between rounded-lg px-2 py-1.5 hover:bg-neutral-900 text-sm">
-            <button className="text-left flex-1" onClick={() => onSelect(c._id)}>
-              {c.name}
-            </button>
-            <button className="size-6 grid place-items-center text-neutral-500 hover:text-red-400" onClick={() => onRemove(c._id)} aria-label="Remove">
-              ×
-            </button>
-          </div>
-        ))}
-        <div className="flex items-center gap-2 pt-1">
+    <div className="px-0 overflow-x-hidden">
+      <div>
+        <div className="divide-y divide-neutral-800">
+          {categories.map((c) => (
+            <div key={c._id} className="flex items-center justify-between py-2 text-sm hover:bg-neutral-900/30 transition-colors">
+              <button className="text-left flex-1 min-w-0 truncate" onClick={() => onSelect(c._id)}>
+                {c.name}
+              </button>
+              <button className="size-6 shrink-0 grid place-items-center text-neutral-400 hover:text-red-400" onClick={() => onRemove(c._id)} aria-label="Remove">
+                <X className="size-3" />
+              </button>
+            </div>
+          ))}
+        </div>
+        <div className="w-full flex items-center gap-2 pt-2 pr-1">
           <input
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             placeholder="Add category"
-            className="flex-1 rounded-md bg-neutral-900 border border-neutral-800 px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-neutral-700"
+            className="flex-1 min-w-0 rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-xs outline-none focus:ring-1 focus:ring-neutral-700"
           />
           <button
-            className="size-7 grid place-items-center rounded-md border border-neutral-800 hover:bg-neutral-900"
+            className="size-8 shrink-0 grid place-items-center rounded-md border border-neutral-800 hover:bg-neutral-900"
             onClick={async () => {
               const name = newName.trim()
               if (!name) return
@@ -1311,10 +1313,10 @@ function SidebarContent({
   onOpenCold: () => void
 }) {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="h-full flex flex-col">
       <ProfileHeader profile={profile} />
-      <div className="mx-2 rounded-2xl border border-neutral-800 bg-neutral-950/60">
-        <div className="p-2">
+      <div className="flex-1 flex flex-col px-4">
+        <div className="pt-2 pb-2">
           <button
             className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white px-3 py-2 text-sm"
             onClick={onCompose}
@@ -1322,86 +1324,81 @@ function SidebarContent({
             <Send className="size-4" /> New email
           </button>
         </div>
-        <div className="px-3 pb-2 text-[11px] uppercase tracking-wide text-neutral-500">Core</div>
-        <nav className="flex flex-col gap-1 px-2 pb-2">
+        <div className="pb-2 text-[11px] uppercase tracking-wide text-neutral-500">Core</div>
+        <nav className="flex flex-col pb-2 divide-y divide-neutral-800">
           {leftItems.map(({ key, label, Icon }) => (
             <button
               key={key}
-              className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-left hover:bg-neutral-900 border border-transparent"
+              className="group flex items-center justify-between py-2 text-left hover:bg-neutral-900/30 transition-colors"
               onClick={() => onLeftItemClick(key)}
             >
-              <span className="flex items-center gap-2 text-sm">
-                <Icon className="size-4" />
-                {label}
+              <span className="inline-flex items-center gap-3 text-sm text-neutral-200">
+                <Icon className="size-4 text-white" />
+                <span className="group-hover:text-neutral-100">{label}</span>
               </span>
+              <span className="text-[11px] text-neutral-500" />
             </button>
           ))}
         </nav>
-      </div>
-      <div className="mx-2 rounded-2xl border border-neutral-800 bg-neutral-950/60 p-2">
-        <div className="px-1 pb-1 text-[11px] uppercase tracking-wide text-neutral-500">Invoxus Lens</div>
-        <button
-          className="group w-full inline-flex items-center justify-between rounded-lg border border-neutral-800 bg-neutral-950/40 hover:bg-neutral-900 px-3 py-2 text-sm transition-colors mb-2"
-          onClick={onShowOtps}
-        >
-          <span className="inline-flex items-center gap-2">
-            <span className="rounded-md p-1.5 bg-neutral-900 border border-neutral-800 group-hover:bg-neutral-800">
-              <KeyRound className="size-4 text-amber-300" />
+        <div className="pt-4 pb-1 text-[11px] uppercase tracking-wide text-neutral-500">Invoxus Lens</div>
+        <div className="divide-y divide-neutral-800">
+          <button
+            className="group w-full inline-flex items-center justify-between py-2 text-sm hover:bg-neutral-900/30 transition-colors"
+            onClick={onShowOtps}
+          >
+            <span className="inline-flex items-center gap-3">
+              <KeyRound className="size-4 text-white" />
+              <span>OTPs</span>
             </span>
-            <span>OTPs</span>
-          </span>
-          <span className="text-[11px] text-neutral-500" />
-        </button>
-        <button
-          className="group w-full inline-flex items-center justify-between rounded-lg border border-neutral-800 bg-neutral-950/40 hover:bg-neutral-900 px-3 py-2 text-sm transition-colors"
-          onClick={onShowAiDelete}
-        >
-          <span className="inline-flex items-center gap-2">
-            <span className="rounded-md p-1.5 bg-neutral-900 border border-neutral-800 group-hover:bg-neutral-800">
-              <Trash2 className="size-4 text-red-300" />
+            <span className="text-[11px] text-neutral-500" />
+          </button>
+          <button
+            className="group w-full inline-flex items-center justify-between py-2 text-sm hover:bg-neutral-900/30 transition-colors"
+            onClick={onShowAiDelete}
+          >
+            <span className="inline-flex items-center gap-3">
+              <Trash2 className="size-4 text-white" />
+              <span>AI delete</span>
             </span>
-            <span>AI delete</span>
-          </span>
-          <span className="text-[11px] text-neutral-500">AI</span>
-        </button>
-      </div>
-      <div className="px-3 text-[11px] uppercase tracking-wide text-neutral-500 mt-2">Categories</div>
-      <CategoryManager
+            <span className="text-[11px] text-neutral-500">AI</span>
+          </button>
+        </div>
+        <div className="pt-5 text-[11px] uppercase tracking-wide text-neutral-500">Categories</div>
+        <CategoryManager
         categories={categories}
         onAdd={onAddCategory}
         onRemove={onRemoveCategory}
         onSelect={onSelectCategory}
-      />
-      <div className="flex-1" />
-      <div className="px-2 pb-2">
-        <button
-          className="group w-full inline-flex items-center justify-between rounded-xl border border-neutral-800 bg-gradient-to-b from-neutral-950/70 to-neutral-950/40 hover:from-neutral-900 hover:to-neutral-900 px-3 py-2 text-sm transition-colors"
-          onClick={onOpenChat}
-          title="Open assistant"
-        >
-          <span className="inline-flex items-center gap-2">
-            <span className="rounded-md p-1.5 bg-neutral-900 border border-neutral-800 group-hover:bg-neutral-800">
-              <MessageSquare className="size-4 text-violet-300" />
-            </span>
-            <span>Ask Invoxus</span>
-          </span>
-          <span className="text-[11px] text-neutral-500">Ctrl+/</span>
-        </button>
+        />
       </div>
-      <div className="px-2 pb-2">
-        <button
-          className="group w-full inline-flex items-center justify-between rounded-xl border border-neutral-800 bg-gradient-to-b from-neutral-950/70 to-neutral-950/40 hover:from-neutral-900 hover:to-neutral-900 px-3 py-2 text-sm transition-colors"
-          onClick={onOpenCold}
-          title="Open cold email"
-        >
-          <span className="inline-flex items-center gap-2">
-            <span className="rounded-md p-1.5 bg-neutral-900 border border-neutral-800 group-hover:bg-neutral-800">
-              <Wand2 className="size-4 text-emerald-300" />
+      <div className="mt-auto pt-2 px-4">
+        <div className="border-t border-neutral-800/60" />
+        <div className="pt-2 pb-1">
+          <button
+            className="group w-full inline-flex items-center justify-between py-2 text-sm hover:bg-neutral-900/30 transition-colors"
+            onClick={onOpenChat}
+            title="Open assistant"
+          >
+            <span className="inline-flex items-center gap-2">
+              <MessageSquare className="size-4 text-white" />
+              <span>Ask Invoxus</span>
             </span>
-            <span>Cold email</span>
-          </span>
-          <span className="text-[11px] text-neutral-500">AI</span>
-        </button>
+            <span className="text-[11px] text-neutral-500">Ctrl+/</span>
+          </button>
+        </div>
+        <div className="pb-2">
+          <button
+            className="group w-full inline-flex items-center justify-between py-2 text-sm hover:bg-neutral-900/30 transition-colors"
+            onClick={onOpenCold}
+            title="Open cold email"
+          >
+            <span className="inline-flex items-center gap-2">
+              <Wand2 className="size-4 text-white" />
+              <span>Cold email</span>
+            </span>
+            <span className="text-[11px] text-neutral-500">AI</span>
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -1938,6 +1935,7 @@ function ComposeColdEmailModal({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [reason, setReason] = useState<string | null>(null)
+  const previewRef = useRef<HTMLDivElement | null>(null)
 
   const toInvalid = !!to && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)
   const wordCount = body ? body.trim().split(/\s+/).filter(Boolean).length : 0
@@ -1995,9 +1993,17 @@ function ComposeColdEmailModal({
                       setError(null)
                       const d = await onGenerate({ to, keywords, role, company })
                       if (d.to && !to) setTo(d.to)
-                      setSubject(d.subject || '')
-                      setBody(d.body || '')
+                      const nextSubject = d.subject || subject || ''
+                      const nextBody = d.body || body || ''
+                      setSubject(nextSubject)
+                      setBody(nextBody)
                       setReason(d.reason || null)
+                      // notify
+                      import('sonner').then(({ toast }) => toast.success('Draft generated'))
+                      // scroll preview into view on mobile
+                      setTimeout(() => {
+                        previewRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                      }, 50)
                     } finally {
                       setLoading(false)
                     }
@@ -2020,7 +2026,7 @@ function ComposeColdEmailModal({
                 <textarea value={body} onChange={(e) => setBody(e.target.value)} className="min-h-[160px] w-full resize-y rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-neutral-700" />
               </div>
             </div>
-            <div className="rounded-lg border border-neutral-800 bg-neutral-900/40 p-4 self-start">
+            <div ref={previewRef} className="rounded-lg border border-neutral-800 bg-neutral-900/40 p-4 self-start w-full">
               <div className="flex items-center justify-between mb-2">
                 <div className="text-xs font-medium text-neutral-400">Preview</div>
                 {reason ? <span className="text-[11px] px-2 py-0.5 rounded-full bg-violet-900/30 text-violet-300 border border-violet-700/40">{reason}</span> : null}
@@ -2037,7 +2043,7 @@ function ComposeColdEmailModal({
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-2 pt-5">
+              <div className="flex items-center justify-end gap-2 pt-5">
             <button className="rounded-md border border-neutral-800 px-3 py-1.5 text-sm hover:bg-neutral-900" onClick={onClose}>Close</button>
             <button
               disabled={!to.trim() || toInvalid || !subject.trim() || !body.trim()}
@@ -2045,7 +2051,7 @@ function ComposeColdEmailModal({
               onClick={async () => {
                 try {
                   setLoading(true)
-                  const ok = await onSend({ to, subject, body })
+                      const ok = await onSend({ to, subject, body })
                   if (ok) onClose()
                 } catch (e: any) {
                   setError('Failed to send email')
