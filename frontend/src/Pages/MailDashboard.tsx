@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Star, Reply as LucideReply, Trash2, Wand2, Send, X, Plus, Inbox, MessageSquare, Bot, Sparkles, CheckSquare, KeyRound, LogOut } from 'lucide-react'
+import { Star, Reply as LucideReply, Trash2, Wand2, Send, X, Plus, Inbox, MessageSquare, Bot, Sparkles, CheckSquare, KeyRound, LogOut, Menu, ArrowLeft } from 'lucide-react'
 import { PlaceholdersAndVanishInput } from '../components/ui/reveal'
 
 type Importance = 'high' | 'medium' | 'low'
@@ -75,6 +75,7 @@ export default function MailDashboard() {
   const [showingOtps, setShowingOtps] = useState(false)
   const [selectedForDelete, setSelectedForDelete] = useState<Set<string>>(new Set())
   const [aiDeleteMode, setAiDeleteMode] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const chatSuggestions = [
     'Recent design feedback',
     'Reply to Nick',
@@ -250,212 +251,194 @@ export default function MailDashboard() {
     })
   }
 
+  async function handleLeftItemClick(key: string, onAfterAction?: () => void) {
+    if (key === 'inbox') {
+      setSelectedCategory(null)
+      setAiDeleteMode(false)
+      setSelectedForDelete(new Set())
+      setShowingSuggestions(false)
+      setShowingOtps(false)
+      try {
+        setLoading(true)
+        const resp = await fetch(`${API_BASE}/api/gmail/messages?limit=100`, { credentials: 'include' })
+        const json = await resp.json()
+        setEmails(json.messages || [])
+      } catch (e) {
+        setError('Failed to load')
+      } finally {
+        setLoading(false)
+      }
+    }
+    if (key === 'sent') {
+      setSelectedCategory(null)
+      setAiDeleteMode(false)
+      setSelectedForDelete(new Set())
+      setShowingSuggestions(false)
+      setShowingOtps(false)
+      try {
+        setLoading(true)
+        const resp = await fetch(`${API_BASE}/api/gmail/messages?limit=100&folder=sent`, { credentials: 'include' })
+        const json = await resp.json()
+        setEmails(json.messages || [])
+        setSentCount(Array.isArray(json.messages) ? json.messages.length : 0)
+      } catch (e) {
+        setError('Failed to load')
+      } finally {
+        setLoading(false)
+      }
+    }
+    onAfterAction?.()
+  }
+
+  async function handleShowOtps(onAfterAction?: () => void) {
+    try {
+      setSelectedCategory(null)
+      setAiDeleteMode(false)
+      setSelectedForDelete(new Set())
+      setShowingSuggestions(false)
+      setShowingOtps(true)
+      setLoading(true)
+      const r = await fetch(`${API_BASE}/api/gmail/messages/otps?limit=300`, { credentials: 'include' })
+      if (r.ok) {
+        const j = await r.json()
+        setEmails(j.messages || [])
+      }
+    } catch {
+    } finally {
+      setLoading(false)
+      onAfterAction?.()
+    }
+  }
+
+  async function handleShowAiDelete(onAfterAction?: () => void) {
+    try {
+      setSelectedCategory(null)
+      setAiDeleteMode(true)
+      setSelectedForDelete(new Set())
+      setShowingSuggestions(true)
+      setShowingOtps(false)
+      setLoading(true)
+      const url = buildApiUrl('/api/gmail/messages/suggest-deletions')
+      url.searchParams.set('limit', '200')
+      if (search.trim()) url.searchParams.set('q', search.trim())
+      const r = await fetch(url.toString(), { credentials: 'include' })
+      if (r.ok) {
+        const j = await r.json()
+        setEmails(j.messages || [])
+      }
+    } catch {
+    } finally {
+      setLoading(false)
+      onAfterAction?.()
+    }
+  }
+
   return (
     <div className="h-screen w-screen bg-neutral-950 text-neutral-100 no-anim">
       <div className="flex h-full">
-        {/* Left sidebar */}
-        <aside className="w-64 border-r border-neutral-800 p-3 flex flex-col gap-4 bg-neutral-950/40">
-          <ProfileHeader profile={profile} />
-          <div className="mx-2 rounded-2xl border border-neutral-800 bg-neutral-950/60">
-            <div className="p-2">
-              <button
-                className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white px-3 py-2 text-sm"
-                onClick={() => setComposeOpen(true)}
-              >
-                <Send className="size-4" /> New email
-              </button>
-            </div>
-            <div className="px-3 pb-2 text-[11px] uppercase tracking-wide text-neutral-500">Core</div>
-            <nav className="flex flex-col gap-1 px-2 pb-2">
-            {leftItems.map(({ key, label, count, Icon }) => (
-              <button
-                key={key}
-                className="flex items-center justify-between rounded-lg px-2.5 py-2 text-left hover:bg-neutral-900 border border-transparent"
-                onClick={() => {
-                  if (key === 'inbox') {
-                    setSelectedCategory(null)
-                    setAiDeleteMode(false)
-                    setSelectedForDelete(new Set())
-                    setShowingSuggestions(false)
-                    setShowingOtps(false)
-                    // reload inbox
-                    ;(async () => {
-                      try {
-                        setLoading(true)
-                        const resp = await fetch(`${API_BASE}/api/gmail/messages?limit=100`, { credentials: 'include' })
-                        const json = await resp.json()
-                        setEmails(json.messages || [])
-                      } catch (e) {
-                        setError('Failed to load')
-                      } finally {
-                        setLoading(false)
-                      }
-                    })()
-                  }
-                  if (key === 'sent') {
-                    setSelectedCategory(null)
-                    setAiDeleteMode(false)
-                    setSelectedForDelete(new Set())
-                    setShowingSuggestions(false)
-                    setShowingOtps(false)
-                    ;(async () => {
-                      try {
-                        setLoading(true)
-                        const resp = await fetch(`${API_BASE}/api/gmail/messages?limit=100&folder=sent`, { credentials: 'include' })
-                        const json = await resp.json()
-                        setEmails(json.messages || [])
-                        setSentCount(Array.isArray(json.messages) ? json.messages.length : 0)
-                      } catch (e) {
-                        setError('Failed to load')
-                      } finally {
-                        setLoading(false)
-                      }
-                    })()
-                  }
+        {/* Mobile slide-over sidebar */}
+        {sidebarOpen ? (
+          <div className="fixed inset-0 z-40 md:hidden">
+            <div className="absolute inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
+            <div className="absolute inset-y-0 left-0 w-72 max-w-[85vw] border-r border-neutral-800 bg-neutral-950 p-3 overflow-y-auto">
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-sm text-neutral-400">Menu</div>
+                <button
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-neutral-900"
+                  onClick={() => setSidebarOpen(false)}
+                  aria-label="Close menu"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+              <SidebarContent
+                profile={profile}
+                leftItems={leftItems}
+                onCompose={() => { setComposeOpen(true); setSidebarOpen(false) }}
+                onLeftItemClick={(key) => handleLeftItemClick(key, () => setSidebarOpen(false))}
+                onShowOtps={() => handleShowOtps(() => setSidebarOpen(false))}
+                onShowAiDelete={() => handleShowAiDelete(() => setSidebarOpen(false))}
+                categories={categories}
+                onAddCategory={async (name) => {
+                  const r = await fetch(`${API_BASE}/api/gmail/categories`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name }),
+                  })
+                  if (r.ok) await loadCategories()
                 }}
-              >
-                <span className="flex items-center gap-2 text-sm">
-                  <Icon className="size-4" />
-                  {label}
-                </span>
-                <span className="text-xs text-neutral-400">{count}</span>
-              </button>
-            ))}
-            </nav>
-          </div>
-          <div className="mx-2 rounded-2xl border border-neutral-800 bg-neutral-950/60 p-2">
-            <div className="px-1 pb-1 text-[11px] uppercase tracking-wide text-neutral-500">Invoxus Lens</div>
-            {/* OTPs quick filter */}
-            <button
-              className="group w-full inline-flex items-center justify-between rounded-lg border border-neutral-800 bg-neutral-950/40 hover:bg-neutral-900 px-3 py-2 text-sm transition-colors mb-2"
-              onClick={async () => {
-                try {
-                  setSelectedCategory(null)
+                onRemoveCategory={async (id) => {
+                  const r = await fetch(`${API_BASE}/api/gmail/categories/${id}`, {
+                    method: 'DELETE',
+                    credentials: 'include',
+                  })
+                  if (r.ok) await loadCategories()
+                }}
+                onSelectCategory={(catId) => {
+                  setSelectedCategory(catId)
                   setAiDeleteMode(false)
-                  setSelectedForDelete(new Set())
+                  setShowingOtps(false)
                   setShowingSuggestions(false)
-                  setShowingOtps(true)
-                  setLoading(true)
-                  const r = await fetch(`${API_BASE}/api/gmail/messages/otps?limit=300`, { credentials: 'include' })
-                  if (r.ok) {
-                    const j = await r.json()
-                    setEmails(j.messages || [])
-                  }
-                } catch {}
-                finally {
-                  setLoading(false)
-                }
-              }}
-            >
-              <span className="inline-flex items-center gap-2">
-                <span className="rounded-md p-1.5 bg-neutral-900 border border-neutral-800 group-hover:bg-neutral-800">
-                  <KeyRound className="size-4 text-amber-300" />
-                </span>
-                <span>OTPs</span>
-              </span>
-              <span className="text-[11px] text-neutral-500" />
-            </button>
-            <button
-              className="group w-full inline-flex items-center justify-between rounded-lg border border-neutral-800 bg-neutral-950/40 hover:bg-neutral-900 px-3 py-2 text-sm transition-colors"
-              onClick={async () => {
-              try {
-                setSelectedCategory(null)
-                setAiDeleteMode(true)
-                setSelectedForDelete(new Set())
-                setShowingSuggestions(true)
-                setShowingOtps(false)
-                setLoading(true)
-                const url = buildApiUrl('/api/gmail/messages/suggest-deletions')
-                url.searchParams.set('limit', '200')
-                if (search.trim()) url.searchParams.set('q', search.trim())
-                const r = await fetch(url.toString(), { credentials: 'include' })
-                if (r.ok) {
-                  const j = await r.json()
-                  setEmails(j.messages || [])
-                }
-              } catch {}
-              finally {
-                setLoading(false)
-              }
-              }}
-            >
-              <span className="inline-flex items-center gap-2">
-                <span className="rounded-md p-1.5 bg-neutral-900 border border-neutral-800 group-hover:bg-neutral-800">
-                  <Trash2 className="size-4 text-red-300" />
-                </span>
-                <span>AI delete</span>
-              </span>
-              <span className="text-[11px] text-neutral-500">AI</span>
-            </button>
+                  setSelectedForDelete(new Set())
+                  setSidebarOpen(false)
+                }}
+                onOpenChat={() => { setChatModalOpen(true); setSidebarOpen(false) }}
+                onOpenCold={() => { setColdOpen(true); setSidebarOpen(false) }}
+              />
+            </div>
           </div>
-          {/* Custom Categories */}
-          <div className="px-3 text-[11px] uppercase tracking-wide text-neutral-500 mt-2">Categories</div>
-          <CategoryManager
+        ) : null}
+        {/* Left sidebar (desktop) */}
+        <aside className="hidden md:flex w-64 border-r border-neutral-800 p-3 flex-col gap-4 bg-neutral-950/40">
+          <SidebarContent
+            profile={profile}
+            leftItems={leftItems}
+            onCompose={() => setComposeOpen(true)}
+            onLeftItemClick={(key) => handleLeftItemClick(key)}
+            onShowOtps={() => handleShowOtps()}
+            onShowAiDelete={() => handleShowAiDelete()}
             categories={categories}
-            onAdd={async (name) => {
+            onAddCategory={async (name) => {
               const r = await fetch(`${API_BASE}/api/gmail/categories`, {
                 method: 'POST',
                 credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name }),
               })
-              if (r.ok) {
-                await loadCategories()
-              }
+              if (r.ok) await loadCategories()
             }}
-            onRemove={async (id) => {
+            onRemoveCategory={async (id) => {
               const r = await fetch(`${API_BASE}/api/gmail/categories/${id}`, {
                 method: 'DELETE',
                 credentials: 'include',
               })
               if (r.ok) await loadCategories()
             }}
-            onSelect={(catId) => {
+            onSelectCategory={(catId) => {
               setSelectedCategory(catId)
               setAiDeleteMode(false)
               setShowingOtps(false)
               setShowingSuggestions(false)
               setSelectedForDelete(new Set())
             }}
+            onOpenChat={() => setChatModalOpen(true)}
+            onOpenCold={() => setColdOpen(true)}
           />
-
-          {/* AI Assistant */}
-          <div className="flex-1" />
-          <div className="px-2 pb-2">
-            <button
-              className="group w-full inline-flex items-center justify-between rounded-xl border border-neutral-800 bg-gradient-to-b from-neutral-950/70 to-neutral-950/40 hover:from-neutral-900 hover:to-neutral-900 px-3 py-2 text-sm transition-colors"
-              onClick={() => setChatModalOpen(true)}
-              title="Open assistant"
-            >
-              <span className="inline-flex items-center gap-2">
-                <span className="rounded-md p-1.5 bg-neutral-900 border border-neutral-800 group-hover:bg-neutral-800">
-                  <MessageSquare className="size-4 text-violet-300" />
-                </span>
-                <span>Ask Invoxus</span>
-              </span>
-              <span className="text-[11px] text-neutral-500">Ctrl+/</span>
-            </button>
-          </div>
-          <div className="px-2 pb-2">
-            <button
-              className="group w-full inline-flex items-center justify-between rounded-xl border border-neutral-800 bg-gradient-to-b from-neutral-950/70 to-neutral-950/40 hover:from-neutral-900 hover:to-neutral-900 px-3 py-2 text-sm transition-colors"
-              onClick={() => setColdOpen(true)}
-              title="Open cold email"
-            >
-              <span className="inline-flex items-center gap-2">
-                <span className="rounded-md p-1.5 bg-neutral-900 border border-neutral-800 group-hover:bg-neutral-800">
-                  <Wand2 className="size-4 text-emerald-300" />
-                </span>
-                <span>Cold email</span>
-              </span>
-              <span className="text-[11px] text-neutral-500">AI</span>
-            </button>
-          </div>
         </aside>
 
         {/* Middle list */}
-        <section className="w-[420px] border-r border-neutral-800 flex flex-col">
+        <section className={`${selectedId ? 'hidden md:flex' : 'flex'} w-full md:w-[420px] border-r border-neutral-800 flex-col`}>
           <div className="p-3 border-b border-neutral-800 flex items-center gap-2">
+            {/* Mobile hamburger */}
+            <button
+              className="md:hidden inline-flex h-9 w-9 items-center justify-center rounded-md border border-neutral-800 hover:bg-neutral-900"
+              onClick={() => setSidebarOpen(true)}
+              aria-label="Open menu"
+              title="Menu"
+            >
+              <Menu className="size-5" />
+            </button>
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -733,116 +716,7 @@ export default function MailDashboard() {
         </section>
 
         {/* Right detail */}
-        <section className="flex-1 flex flex-col">
-          {coldOpen ? (
-            <ComposeColdEmailModal
-              onClose={() => setColdOpen(false)}
-              onGenerate={async (payload: { to: string; keywords: string; role?: string; company?: string }) => {
-                const r = await fetch(`${API_BASE}/api/cold-email/generate`, {
-                  method: 'POST',
-                  credentials: 'include',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify(payload),
-                })
-                if (!r.ok) throw new Error('Failed to generate')
-                return (await r.json()) as { to: string; subject: string; body: string; reason?: string }
-              }}
-              onSend={async (payload: { to: string; subject: string; body: string }) => {
-                const r = await fetch(`${API_BASE}/api/cold-email/send`, {
-                  method: 'POST',
-                  credentials: 'include',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify(payload),
-                })
-                if (!r.ok) throw new Error('Failed to send')
-                return true
-              }}
-            />
-          ) : null}
-          {chatModalOpen ? (
-            <ChatModal
-              onClose={() => setChatModalOpen(false)}
-              suggestions={chatSuggestions}
-              history={chatHistory}
-              pendingSend={chatPendingSend}
-              onCancelPendingSend={() => setChatPendingSend(null)}
-              onConfirmSend={async ({ to, subject, body }) => {
-                const sr = await fetch(`${API_BASE}/api/gmail/messages/send`, {
-                  method: 'POST',
-                  credentials: 'include',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ to, subject, body }),
-                })
-                if (sr.ok) {
-                  setChatHistory((h) => [...h, { role: 'assistant', text: `Email sent to ${to}` }])
-                  setChatPendingSend(null)
-                  try {
-                    const resp = await fetch(`${API_BASE}/api/gmail/messages?limit=100`, { credentials: 'include' })
-                    if (resp.ok) {
-                      const json = await resp.json()
-                      setEmails(json.messages || [])
-                    }
-                  } catch {}
-                  return true
-                }
-                setChatHistory((h) => [...h, { role: 'assistant', text: 'Failed to send email.' }])
-                return false
-              }}
-              onAsk={async (q) => {
-                setChatHistory((h) => [...h, { role: 'user', text: q }])
-                try {
-                  const r = await fetch(`${API_BASE}/api/chat/ask`, {
-                    method: 'POST',
-                    credentials: 'include',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ question: q }),
-                  })
-                  const contentType = r.headers.get('content-type') || ''
-                  if (!r.ok) {
-                    await r.text().catch(() => '')
-                    setChatHistory((h) => [...h, { role: 'assistant', text: 'Sorry, I could not answer.' }])
-                  } else if (contentType.includes('application/json')) {
-                    const j = await r.json()
-                    const a = j?.answer || 'No answer'
-                    setChatHistory((h) => [...h, { role: 'assistant', text: a }])
-
-                    // If AI suggested an action, confirm and execute
-                    if (j?.action === 'send' && j?.send?.toEmail) {
-                      const subject = j.send.subject || 'Quick note'
-                      const body = j.send.body || a
-                      setChatPendingSend({ toEmail: j.send.toEmail, subject, body })
-                    } else if (j?.action === 'schedule' && (j?.schedule?.when || j?.schedule?.timezone)) {
-                      const ok = window.confirm('Schedule this email as suggested?')
-                      if (ok) {
-                        const tz = j.schedule.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone
-                        const to = j.schedule.toEmail
-                        const subject = j.schedule.subject || 'Scheduled note'
-                        const body = j.schedule.body || a
-                        const prompt = `Send at ${j.schedule.when || 'next available time'} to ${to}`
-                        const sr = await fetch(`${API_BASE}/api/schedule/schedule`, {
-                          method: 'POST',
-                          credentials: 'include',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ to, subject, body, prompt, timezone: tz }),
-                        })
-                        if (sr.ok) {
-                          setChatHistory((h) => [...h, { role: 'assistant', text: 'Scheduled the email.' }])
-                        } else {
-                          setChatHistory((h) => [...h, { role: 'assistant', text: 'Failed to schedule.' }])
-                        }
-                      }
-                    }
-                  } else {
-                    const txt2 = await r.text()
-                    setChatHistory((h) => [...h, { role: 'assistant', text: txt2.slice(0, 400) }])
-                  }
-                } catch (e) {
-                  setChatHistory((h) => [...h, { role: 'assistant', text: 'Network error.' }])
-                } finally {
-                }
-              }}
-            />
-          ) : null}
+        <section className={`flex-1 flex flex-col ${selectedId ? '' : 'hidden'} md:flex`}>
           {composeOpen ? (
             <ComposeModal
               onClose={() => setComposeOpen(false)}
@@ -868,6 +742,16 @@ export default function MailDashboard() {
           ) : detail ? (
             <div className="flex-1 overflow-auto">
               <div className="border-b border-neutral-800 p-5">
+                {/* Mobile back */}
+                <div className="md:hidden mb-2">
+                  <button
+                    className="inline-flex items-center gap-2 text-neutral-300 hover:text-neutral-100"
+                    onClick={() => setSelectedId(null)}
+                  >
+                    <ArrowLeft className="size-5" />
+                    Back
+                  </button>
+                </div>
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
                     <div className="flex items-center gap-3">
@@ -1120,6 +1004,115 @@ export default function MailDashboard() {
           ) : null}
         </section>
       </div>
+      {/* Global modals to ensure they open on mobile */}
+      {coldOpen ? (
+        <ComposeColdEmailModal
+          onClose={() => setColdOpen(false)}
+          onGenerate={async (payload: { to: string; keywords: string; role?: string; company?: string }) => {
+            const r = await fetch(`${API_BASE}/api/cold-email/generate`, {
+              method: 'POST',
+              credentials: 'include',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+            })
+            if (!r.ok) throw new Error('Failed to generate')
+            return (await r.json()) as { to: string; subject: string; body: string; reason?: string }
+          }}
+          onSend={async (payload: { to: string; subject: string; body: string }) => {
+            const r = await fetch(`${API_BASE}/api/cold-email/send`, {
+              method: 'POST',
+              credentials: 'include',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+            })
+            if (!r.ok) throw new Error('Failed to send')
+            return true
+          }}
+        />
+      ) : null}
+      {chatModalOpen ? (
+        <ChatModal
+          onClose={() => setChatModalOpen(false)}
+          suggestions={chatSuggestions}
+          history={chatHistory}
+          pendingSend={chatPendingSend}
+          onCancelPendingSend={() => setChatPendingSend(null)}
+          onConfirmSend={async ({ to, subject, body }) => {
+            const sr = await fetch(`${API_BASE}/api/gmail/messages/send`, {
+              method: 'POST',
+              credentials: 'include',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ to, subject, body }),
+            })
+            if (sr.ok) {
+              setChatHistory((h) => [...h, { role: 'assistant', text: `Email sent to ${to}` }])
+              setChatPendingSend(null)
+              try {
+                const resp = await fetch(`${API_BASE}/api/gmail/messages?limit=100`, { credentials: 'include' })
+                if (resp.ok) {
+                  const json = await resp.json()
+                  setEmails(json.messages || [])
+                }
+              } catch {}
+              return true
+            }
+            setChatHistory((h) => [...h, { role: 'assistant', text: 'Failed to send email.' }])
+            return false
+          }}
+          onAsk={async (q) => {
+            setChatHistory((h) => [...h, { role: 'user', text: q }])
+            try {
+              const r = await fetch(`${API_BASE}/api/chat/ask`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ question: q }),
+              })
+              const contentType = r.headers.get('content-type') || ''
+              if (!r.ok) {
+                await r.text().catch(() => '')
+                setChatHistory((h) => [...h, { role: 'assistant', text: 'Sorry, I could not answer.' }])
+              } else if (contentType.includes('application/json')) {
+                const j = await r.json()
+                const a = j?.answer || 'No answer'
+                setChatHistory((h) => [...h, { role: 'assistant', text: a }])
+
+                if (j?.action === 'send' && j?.send?.toEmail) {
+                  const subject = j.send.subject || 'Quick note'
+                  const body = j.send.body || a
+                  setChatPendingSend({ toEmail: j.send.toEmail, subject, body })
+                } else if (j?.action === 'schedule' && (j?.schedule?.when || j?.schedule?.timezone)) {
+                  const ok = window.confirm('Schedule this email as suggested?')
+                  if (ok) {
+                    const tz = j.schedule.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone
+                    const to = j.schedule.toEmail
+                    const subject = j.schedule.subject || 'Scheduled note'
+                    const body = j.schedule.body || a
+                    const prompt = `Send at ${j.schedule.when || 'next available time'} to ${to}`
+                    const sr = await fetch(`${API_BASE}/api/schedule/schedule`, {
+                      method: 'POST',
+                      credentials: 'include',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ to, subject, body, prompt, timezone: tz }),
+                    })
+                    if (sr.ok) {
+                      setChatHistory((h) => [...h, { role: 'assistant', text: 'Scheduled the email.' }])
+                    } else {
+                      setChatHistory((h) => [...h, { role: 'assistant', text: 'Failed to schedule.' }])
+                    }
+                  }
+                }
+              } else {
+                const txt2 = await r.text()
+                setChatHistory((h) => [...h, { role: 'assistant', text: txt2.slice(0, 400) }])
+              }
+            } catch (e) {
+              setChatHistory((h) => [...h, { role: 'assistant', text: 'Network error.' }])
+            } finally {
+            }
+          }}
+        />
+      ) : null}
     </div>
   )
 }
@@ -1290,6 +1283,131 @@ function CategoryManager({
   )
 }
 
+function SidebarContent({
+  profile,
+  leftItems,
+  onCompose,
+  onLeftItemClick,
+  onShowOtps,
+  onShowAiDelete,
+  categories,
+  onAddCategory,
+  onRemoveCategory,
+  onSelectCategory,
+  onOpenChat,
+  onOpenCold,
+}: {
+  profile: { name?: string; email?: string; picture?: string } | null
+  leftItems: Array<{ key: string; label: string; count: number; Icon: React.ComponentType<{ className?: string }> }>
+  onCompose: () => void
+  onLeftItemClick: (key: string) => void
+  onShowOtps: () => void
+  onShowAiDelete: () => void
+  categories: Array<{ _id: string; name: string }>
+  onAddCategory: (name: string) => Promise<void> | void
+  onRemoveCategory: (id: string) => Promise<void> | void
+  onSelectCategory: (id: string | null) => void
+  onOpenChat: () => void
+  onOpenCold: () => void
+}) {
+  return (
+    <div className="flex flex-col gap-4">
+      <ProfileHeader profile={profile} />
+      <div className="mx-2 rounded-2xl border border-neutral-800 bg-neutral-950/60">
+        <div className="p-2">
+          <button
+            className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white px-3 py-2 text-sm"
+            onClick={onCompose}
+          >
+            <Send className="size-4" /> New email
+          </button>
+        </div>
+        <div className="px-3 pb-2 text-[11px] uppercase tracking-wide text-neutral-500">Core</div>
+        <nav className="flex flex-col gap-1 px-2 pb-2">
+          {leftItems.map(({ key, label, count, Icon }) => (
+            <button
+              key={key}
+              className="flex items-center justify-between rounded-lg px-2.5 py-2 text-left hover:bg-neutral-900 border border-transparent"
+              onClick={() => onLeftItemClick(key)}
+            >
+              <span className="flex items-center gap-2 text-sm">
+                <Icon className="size-4" />
+                {label}
+              </span>
+              <span className="text-xs text-neutral-400">{count}</span>
+            </button>
+          ))}
+        </nav>
+      </div>
+      <div className="mx-2 rounded-2xl border border-neutral-800 bg-neutral-950/60 p-2">
+        <div className="px-1 pb-1 text-[11px] uppercase tracking-wide text-neutral-500">Invoxus Lens</div>
+        <button
+          className="group w-full inline-flex items-center justify-between rounded-lg border border-neutral-800 bg-neutral-950/40 hover:bg-neutral-900 px-3 py-2 text-sm transition-colors mb-2"
+          onClick={onShowOtps}
+        >
+          <span className="inline-flex items-center gap-2">
+            <span className="rounded-md p-1.5 bg-neutral-900 border border-neutral-800 group-hover:bg-neutral-800">
+              <KeyRound className="size-4 text-amber-300" />
+            </span>
+            <span>OTPs</span>
+          </span>
+          <span className="text-[11px] text-neutral-500" />
+        </button>
+        <button
+          className="group w-full inline-flex items-center justify-between rounded-lg border border-neutral-800 bg-neutral-950/40 hover:bg-neutral-900 px-3 py-2 text-sm transition-colors"
+          onClick={onShowAiDelete}
+        >
+          <span className="inline-flex items-center gap-2">
+            <span className="rounded-md p-1.5 bg-neutral-900 border border-neutral-800 group-hover:bg-neutral-800">
+              <Trash2 className="size-4 text-red-300" />
+            </span>
+            <span>AI delete</span>
+          </span>
+          <span className="text-[11px] text-neutral-500">AI</span>
+        </button>
+      </div>
+      <div className="px-3 text-[11px] uppercase tracking-wide text-neutral-500 mt-2">Categories</div>
+      <CategoryManager
+        categories={categories}
+        onAdd={onAddCategory}
+        onRemove={onRemoveCategory}
+        onSelect={onSelectCategory}
+      />
+      <div className="flex-1" />
+      <div className="px-2 pb-2">
+        <button
+          className="group w-full inline-flex items-center justify-between rounded-xl border border-neutral-800 bg-gradient-to-b from-neutral-950/70 to-neutral-950/40 hover:from-neutral-900 hover:to-neutral-900 px-3 py-2 text-sm transition-colors"
+          onClick={onOpenChat}
+          title="Open assistant"
+        >
+          <span className="inline-flex items-center gap-2">
+            <span className="rounded-md p-1.5 bg-neutral-900 border border-neutral-800 group-hover:bg-neutral-800">
+              <MessageSquare className="size-4 text-violet-300" />
+            </span>
+            <span>Ask Invoxus</span>
+          </span>
+          <span className="text-[11px] text-neutral-500">Ctrl+/</span>
+        </button>
+      </div>
+      <div className="px-2 pb-2">
+        <button
+          className="group w-full inline-flex items-center justify-between rounded-xl border border-neutral-800 bg-gradient-to-b from-neutral-950/70 to-neutral-950/40 hover:from-neutral-900 hover:to-neutral-900 px-3 py-2 text-sm transition-colors"
+          onClick={onOpenCold}
+          title="Open cold email"
+        >
+          <span className="inline-flex items-center gap-2">
+            <span className="rounded-md p-1.5 bg-neutral-900 border border-neutral-800 group-hover:bg-neutral-800">
+              <Wand2 className="size-4 text-emerald-300" />
+            </span>
+            <span>Cold email</span>
+          </span>
+          <span className="text-[11px] text-neutral-500">AI</span>
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function ChatModal({
   onClose,
   suggestions,
@@ -1317,8 +1435,9 @@ function ChatModal({
     if (el) el.scrollTop = el.scrollHeight
   }, [history, sending])
   return (
-    <div className="fixed right-6 bottom-6 z-30">
-      <div className="w-[420px] max-w-[92vw] rounded-2xl border border-neutral-800 bg-neutral-950 shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 md:inset-auto md:right-6 md:bottom-6 z-50 flex md:block">
+      <div className="absolute inset-0 bg-black/40 md:hidden" onClick={onClose} />
+      <div className="relative w-full h-full md:h-auto md:w-[420px] md:max-w-[92vw] rounded-none md:rounded-2xl border border-neutral-800 bg-neutral-950 shadow-2xl overflow-hidden flex flex-col ml-auto">
         <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-800">
           <div className="flex items-center gap-2 text-sm font-medium text-neutral-200">
             <Bot className="size-4 text-blue-400" />
@@ -1329,7 +1448,7 @@ function ChatModal({
             <X className="size-4" />
           </button>
         </div>
-        <div className="p-4 flex flex-col gap-3" style={{ height: '60vh' }}>
+        <div className="p-4 flex flex-col gap-3 flex-1 md:h-[60vh]">
           {pendingSend ? (
             <PendingSendForm
               draft={pendingSend}
@@ -1774,8 +1893,8 @@ function ComposeColdEmailModal({
   const wordCount = body ? body.trim().split(/\s+/).filter(Boolean).length : 0
   const previewReady = !!subject || !!body
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-start justify-center">
-      <div className="mt-10 w-full max-w-3xl max-w-[92vw] rounded-2xl border border-neutral-800 bg-neutral-950 shadow-xl overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-stretch md:items-start justify-center">
+      <div className="mt-0 md:mt-10 w-full md:w-auto h-full md:h-auto md:max-w-3xl max-w-[100vw] rounded-none md:rounded-2xl border border-neutral-800 bg-neutral-950 shadow-xl overflow-hidden flex flex-col">
         <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-800">
           <div className="flex items-center gap-2">
             <Sparkles className="size-4 text-violet-400" />
@@ -1788,7 +1907,7 @@ function ComposeColdEmailModal({
             <X className="size-4" />
           </button>
         </div>
-        <div className="p-5 overflow-y-auto max-h-[72vh] no-scrollbar" aria-busy={loading}>
+        <div className="p-5 overflow-y-auto md:max-h-[72vh] no-scrollbar flex-1" aria-busy={loading}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div className="space-y-3">
               <div>
