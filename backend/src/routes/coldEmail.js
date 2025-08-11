@@ -22,7 +22,7 @@ router.post('/generate', async (req, res) => {
     if (!to) return res.status(400).json({ error: 'Missing recipient email (to)' });
 
     const groqApiKey = process.env.GROQ_API_KEY;
-    if (!groqApiKey) return res.status(500).json({ error: 'Server missing GROQ_API_KEY' });
+    if (!groqApiKey) return res.status(200).json({ to, subject: 'Hello', body: 'Please set GROQ_API_KEY on the server.', reason: 'Missing GROQ_API_KEY' });
 
     const groq = new Groq({ apiKey: groqApiKey });
     const prompt = `You are a cold email copy expert.
@@ -32,19 +32,48 @@ ${String(keywords)}
 Return strict JSON with fields: subject (<=70 chars), body (4-7 short sentences in 2-3 paragraphs, plain text, no markdown),
 and a one-sentence reason summarizing the value proposition.`;
 
-    const completion = await groq.chat.completions.create({
-      model: 'openai/gpt-oss-20b',
-      messages: [
-        { role: 'system', content: 'Return strict JSON only.' },
-        { role: 'user', content: prompt },
-      ],
-      temperature: 0.5,
-      max_tokens: 600,
-    });
+    // Prefer a fast, widely-available Groq model and force JSON output
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+    let text = '{}';
+    try {
+      const completion = await groq.chat.completions.create({
+        model: process.env.GROQ_MODEL || 'llama-3.1-8b-instant',
+        messages: [
+          { role: 'system', content: 'You are a helpful assistant. Always return STRICT JSON.' },
+          { role: 'user', content: prompt },
+        ],
+        temperature: 0.4,
+        max_tokens: 600,
+        response_format: { type: 'json_object' },
+        // @ts-ignore Groq SDK forwards this to fetch
+        signal: controller.signal,
+      });
+      text = completion.choices?.[0]?.message?.content || '{}';
+    } catch (err) {
+      if (err?.name === 'AbortError') {
+        console.warn('Groq completion timed out');
+      } else {
+        console.warn('Groq completion error:', err?.response?.data || err?.message || err);
+      }
+    } finally {
+      clearTimeout(timeout);
+    }
 
-    const text = completion.choices?.[0]?.message?.content || '{}';
     let draft = {};
-    try { draft = JSON.parse(text); } catch { draft = { subject: 'Hello', body: text.trim().slice(0, 1500) }; }
+    try {
+      draft = JSON.parse(text);
+    } catch {
+      // Fallback: synthesize minimal draft if model returned non-JSON or empty
+      const fallbackSubject = `Quick intro about ${company || role}`.slice(0, 70);
+      const fallbackBody = (
+        `Hi ${role},\n\n` +
+        `I wanted to reach out regarding ${company || 'your team'}. ` +
+        `Keywords: ${String(keywords).slice(0, 200)}.\n\n` +
+        `Would love to share how I can help.\n\nBest,\n`
+      ).slice(0, 1500);
+      draft = { subject: fallbackSubject, body: fallbackBody, reason: 'Fallback draft due to model error' };
+    }
 
     res.json({ to, subject: draft.subject, body: draft.body, reason: draft.reason });
   } catch (err) {

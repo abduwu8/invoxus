@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Star, Reply as LucideReply, Trash2, Wand2, Send, X, Plus, Inbox, MessageSquare, Bot, Sparkles, CheckSquare, KeyRound, LogOut, Menu, ArrowLeft } from 'lucide-react'
+import { Star, Reply as LucideReply, Trash2, Wand2, Send, X, Plus, Inbox, MessageSquare, Bot, Sparkles, CheckSquare, KeyRound, LogOut, Menu, ArrowLeft, ThumbsUp, ThumbsDown } from 'lucide-react'
 import { PlaceholdersAndVanishInput } from '../components/ui/reveal'
 
 type Importance = 'high' | 'medium' | 'low'
@@ -1324,17 +1324,16 @@ function SidebarContent({
         </div>
         <div className="px-3 pb-2 text-[11px] uppercase tracking-wide text-neutral-500">Core</div>
         <nav className="flex flex-col gap-1 px-2 pb-2">
-          {leftItems.map(({ key, label, count, Icon }) => (
+          {leftItems.map(({ key, label, Icon }) => (
             <button
               key={key}
-              className="flex items-center justify-between rounded-lg px-2.5 py-2 text-left hover:bg-neutral-900 border border-transparent"
+              className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-left hover:bg-neutral-900 border border-transparent"
               onClick={() => onLeftItemClick(key)}
             >
               <span className="flex items-center gap-2 text-sm">
                 <Icon className="size-4" />
                 {label}
               </span>
-              <span className="text-xs text-neutral-400">{count}</span>
             </button>
           ))}
         </nav>
@@ -1427,6 +1426,7 @@ function ChatModal({
 }) {
   const [value, setValue] = useState('')
   const [sending, setSending] = useState(false)
+  const [showFeedback, setShowFeedback] = useState<null | number>(null)
   const showExamples = history.length === 0 && value.trim().length === 0
   const messagesRef = useRef<HTMLDivElement | null>(null)
 
@@ -1434,15 +1434,23 @@ function ChatModal({
     const el = messagesRef.current
     if (el) el.scrollTop = el.scrollHeight
   }, [history, sending])
+  useEffect(() => {
+    // When assistant responds (last message role = assistant), show feedback prompt
+    if (history.length > 0) {
+      const last = history[history.length - 1]
+      if (last.role === 'assistant') {
+        setShowFeedback(Date.now())
+      }
+    }
+  }, [history])
   return (
     <div className="fixed inset-0 md:inset-auto md:right-6 md:bottom-6 z-50 flex md:block">
-      <div className="absolute inset-0 bg-black/40 md:hidden" onClick={onClose} />
-      <div className="relative w-full h-full md:h-auto md:w-[420px] md:max-w-[92vw] rounded-none md:rounded-2xl border border-neutral-800 bg-neutral-950 shadow-2xl overflow-hidden flex flex-col ml-auto">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-800">
-          <div className="flex items-center gap-2 text-sm font-medium text-neutral-200">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm md:hidden" onClick={onClose} />
+      <div className="relative w-full h-full md:h-auto md:w-[460px] md:max-w-[92vw] rounded-none md:rounded-2xl border border-neutral-800/80 bg-neutral-950/95 shadow-2xl overflow-hidden flex flex-col ml-auto">
+        <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 border-b border-neutral-800 bg-gradient-to-b from-neutral-950/90 to-neutral-900/50">
+          <div className="flex items-center gap-2 text-sm font-semibold text-neutral-200 tracking-wide">
             <Bot className="size-4 text-blue-400" />
-            Invoxus
-            
+            Invoxus Assistant
           </div>
           <button className="size-8 grid place-items-center rounded hover:bg-neutral-900" onClick={onClose}>
             <X className="size-4" />
@@ -1485,10 +1493,10 @@ function ChatModal({
             {history.slice(-12).map((m, idx) => (
               <div key={idx} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div
-                  className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm border ${
+                  className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm border shadow-sm ${
                     m.role === 'user'
-                      ? 'bg-neutral-900 border-neutral-800 text-neutral-200'
-                      : 'bg-neutral-950 border-neutral-800 text-neutral-300'
+                      ? 'bg-blue-600/15 border-blue-700/40 text-neutral-100'
+                      : 'bg-neutral-900/60 border-neutral-800 text-neutral-200'
                   }`}
                 >
                   {m.text}
@@ -1504,9 +1512,38 @@ function ChatModal({
             ) : null}
           </div>
 
+          {/* Feedback (minimal) */}
+          {showFeedback ? (
+            <div className="flex items-center justify-end gap-2 pb-1 -mt-1">
+              <button
+                className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-neutral-800 hover:bg-neutral-900"
+                title="Good answer"
+                aria-label="Thumbs up"
+                onClick={() => {
+                  setShowFeedback(null)
+                  // fire-and-forget feedback endpoint if available
+                  fetch('/api/chat/feedback', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ vote: 'up' }) }).catch(() => {})
+                }}
+              >
+                <ThumbsUp className="size-4" />
+              </button>
+              <button
+                className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-neutral-800 hover:bg-neutral-900"
+                title="Needs work"
+                aria-label="Thumbs down"
+                onClick={() => {
+                  setShowFeedback(null)
+                  fetch('/api/chat/feedback', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ vote: 'down' }) }).catch(() => {})
+                }}
+              >
+                <ThumbsDown className="size-4" />
+              </button>
+            </div>
+          ) : null}
+
           {/* Input */}
           <div className="flex items-center gap-2 pt-2">
-            <div className="flex-1">
+            <div className="flex-1 rounded-xl border border-neutral-800 bg-neutral-900/40 p-1">
               <PlaceholdersAndVanishInput
                 placeholders={[
                   'Find emails from Alice about invoices',
@@ -1529,7 +1566,7 @@ function ChatModal({
             {/* Voice button omitted for now */}
             <button
               disabled={!value.trim() || sending}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-neutral-800 hover:bg-neutral-900 disabled:opacity-50"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-md bg-blue-600 hover:bg-blue-500 text-white disabled:opacity-50"
               onClick={async () => {
                 const q = value.trim()
                 if (!q) return
@@ -1797,20 +1834,22 @@ function sanitizeHtmlForDark(html: string): string {
   try {
     // Inject minimal CSS to force dark-friendly colors without heavy sanitization libs.
     const style = `<style>
-      /* Colors */
-      body, p, span, div, td, th, li, a { color: rgba(235,235,245,0.92) !important; }
-      a { color: #8ab4f8 !important; }
-      table { color: rgba(235,235,245,0.92) !important; }
-      /* Contain width */
-      * { box-sizing: border-box !important; }
-      html, body { max-width: 100% !important; overflow-x: hidden !important; }
-      img, video, canvas, svg { max-width: 100% !important; height: auto !important; }
-      iframe { max-width: 100% !important; width: 100% !important; }
-      table { width: 100% !important; table-layout: fixed !important; }
-      td, th { word-break: break-word !important; }
-      pre { white-space: pre-wrap !important; word-break: break-word !important; }
-      code { word-break: break-word !important; }
-      p, div, a, li, td, th { word-break: break-word !important; overflow-wrap: anywhere !important; }
+      /* Scope styles to only the email rendering container */
+      .email-frame, .email-frame * { box-sizing: border-box !important; }
+      .email-frame, .email-frame * { color: rgba(235,235,245,0.92) !important; }
+      .email-frame { max-width: 100% !important; overflow-x: hidden !important; background: transparent !important; background-color: transparent !important; }
+      .email-frame a { color: #8ab4f8 !important; }
+      .email-frame a:visited { color: #b293f0 !important; }
+      .email-frame hr { border-color: rgba(255,255,255,0.12) !important; }
+      .email-frame blockquote { border-left: 3px solid rgba(255,255,255,0.18) !important; }
+      .email-frame img, .email-frame video, .email-frame canvas, .email-frame svg { max-width: 100% !important; height: auto !important; }
+      .email-frame iframe { max-width: 100% !important; width: 100% !important; }
+      .email-frame table { width: 100% !important; table-layout: fixed !important; color: rgba(235,235,245,0.92) !important; background: transparent !important; }
+      .email-frame td, .email-frame th { word-break: break-word !important; }
+      .email-frame pre { white-space: pre-wrap !important; word-break: break-word !important; background: rgba(255,255,255,0.06) !important; }
+      .email-frame code { word-break: break-word !important; background: rgba(255,255,255,0.06) !important; }
+      .email-frame p, .email-frame div, .email-frame a, .email-frame li, .email-frame td, .email-frame th { word-break: break-word !important; overflow-wrap: anywhere !important; background: transparent !important; background-color: transparent !important; }
+      .email-frame mark { background: rgba(255, 246, 0, 0.25) !important; color: rgba(235,235,245,0.92) !important; }
     </style>`
     // Place style tag at the top; if HTML already has <head>, insert inside it.
     if (/<head[\s\S]*?>/i.test(html)) {
@@ -1825,9 +1864,9 @@ function sanitizeHtmlForDark(html: string): string {
 function EmailHtmlFrame({ html }: { html: string }) {
   // Encapsulate email HTML in its own container with reset styles so it doesn't affect app fonts
   return (
-    <div className="max-w-none overflow-x-hidden">
+    <div className="email-frame max-w-none overflow-x-hidden">
       <div
-        className="prose prose-invert max-w-none break-words [&_*]:!text-[unset] [&_*]:!leading-relaxed [&_h1]:!text-[1.125rem] [&_h2]:!text-[1.0625rem] [&_h3]:!text-[1rem] [&_p]:!text-[0.9375rem] [&_a]:!no-underline [&_a]:!text-blue-400 [&_a]:break-words [&_img]:max-w-full [&_img]:h-auto [&_pre]:whitespace-pre-wrap [&_code]:break-words [&_table]:w-full [&_table]:table-fixed [&_td]:break-words [&_th]:break-words [&_iframe]:max-w-full [&_iframe]:w-full [&_blockquote]:break-words"
+        className="prose prose-invert max-w-none break-words [&_*]:!text-[inherit] [&_*]:!leading-relaxed [&_h1]:!text-[1.125rem] [&_h2]:!text-[1.0625rem] [&_h3]:!text-[1rem] [&_p]:!text-[0.9375rem] [&_a]:!no-underline [&_a]:!text-blue-400 [&_a]:break-words [&_img]:max-w-full [&_img]:h-auto [&_pre]:whitespace-pre-wrap [&_code]:break-words [&_table]:w-full [&_table]:table-fixed [&_td]:break-words [&_th]:break-words [&_iframe]:max-w-full [&_iframe]:w-full [&_blockquote]:break-words"
         style={{ fontSize: 'inherit', lineHeight: 'inherit' }}
         dangerouslySetInnerHTML={{ __html: html }}
       />

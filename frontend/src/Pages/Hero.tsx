@@ -208,7 +208,7 @@ export default function Hero({ onLoggedIn }: Props) {
               />
             </div>
             {/* Full overlay across the whole video with centered text */}
-            <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-black/90">
+            <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-black/70">
               <div className="flex items-center gap-2 text-neutral-100 text-xl md:text-4xl font-semibold">
                 
                 <FlipWords words={[
