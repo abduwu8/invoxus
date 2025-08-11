@@ -33,6 +33,12 @@ type EmailDetail = {
 
 const API_BASE = import.meta.env.PROD ? '' : ((import.meta.env.VITE_API_BASE as string) || 'http://localhost:4000')
 
+function buildApiUrl(path: string): URL {
+  // Ensure a valid absolute URL in both dev and prod
+  const base = API_BASE || window.location.origin
+  return new URL(path, base)
+}
+
 export default function MailDashboard() {
   type UserProfile = { name?: string; email?: string; picture?: string }
   const [emails, setEmails] = useState<EmailListItem[]>([])
@@ -366,7 +372,7 @@ export default function MailDashboard() {
                 setShowingSuggestions(true)
                 setShowingOtps(false)
                 setLoading(true)
-                const url = new URL(`${API_BASE}/api/gmail/messages/suggest-deletions`)
+                const url = buildApiUrl('/api/gmail/messages/suggest-deletions')
                 url.searchParams.set('limit', '200')
                 if (search.trim()) url.searchParams.set('q', search.trim())
                 const r = await fetch(url.toString(), { credentials: 'include' })
@@ -516,7 +522,7 @@ export default function MailDashboard() {
                   onClick={async () => {
                     try {
                       setLoading(true)
-                      const url = new URL(`${API_BASE}/api/gmail/messages/suggest-deletions`)
+                      const url = buildApiUrl('/api/gmail/messages/suggest-deletions')
                       url.searchParams.set('limit', '200')
                       if (search.trim()) url.searchParams.set('q', search.trim())
                       const r = await fetch(url.toString(), { credentials: 'include' })
