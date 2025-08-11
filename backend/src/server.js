@@ -31,13 +31,14 @@ if (process.env.SERVER_PUBLIC_URL) allowedOrigins.add(process.env.SERVER_PUBLIC_
 if (process.env.RENDER_EXTERNAL_URL) allowedOrigins.add(process.env.RENDER_EXTERNAL_URL);
 
 const corsOptions = {
-  origin: function (origin, callback) {
-    // Allow non-browser clients or same-origin/no-origin requests
-    if (!origin) return callback(null, true);
-    if (process.env.CORS_ALLOW_ALL === '1') return callback(null, true);
-    if (allowedOrigins.has(origin)) return callback(null, true);
-    return callback(new Error('Not allowed by CORS'));
-  },
+  origin: process.env.NODE_ENV === 'production'
+    ? true // reflect request origin; avoids false negatives on custom domains
+    : function (origin, callback) {
+        if (!origin) return callback(null, true);
+        if (process.env.CORS_ALLOW_ALL === '1') return callback(null, true);
+        if (allowedOrigins.has(origin)) return callback(null, true);
+        return callback(new Error('Not allowed by CORS'));
+      },
   credentials: true,
   methods: ['GET', 'POST', 'DELETE', 'PUT', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -51,7 +52,7 @@ app.use(
     name: 'sid',
     secret: process.env.SESSION_SECRET || 'dev_secret_change_me',
     httpOnly: true,
-      sameSite: 'lax',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       secure: process.env.NODE_ENV === 'production',
     maxAge: 1000 * 60 * 60, // 1h
   })
