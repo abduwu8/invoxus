@@ -334,8 +334,8 @@ export default function MailDashboard() {
   }
 
   return (
-    <div className="h-screen w-screen bg-neutral-950 text-neutral-100 no-anim">
-      <div className="flex h-full">
+    <div className="h-screen w-full overflow-x-hidden bg-neutral-950 text-neutral-100 no-anim">
+      <div className="flex h-full overflow-x-hidden">
         {/* Mobile slide-over sidebar */}
         {sidebarOpen ? (
           <div className="fixed inset-0 z-40 md:hidden">
@@ -429,7 +429,7 @@ export default function MailDashboard() {
 
         {/* Middle list */}
         <section className={`${selectedId ? 'hidden md:flex' : 'flex'} w-full md:w-[420px] border-r border-neutral-800 flex-col`}>
-          <div className="p-3 border-b border-neutral-800 flex items-center gap-2">
+          <div className="p-3 border-b border-neutral-800 flex items-center gap-2 overflow-x-auto no-scrollbar">
             {/* Mobile hamburger */}
             <button
               className="md:hidden inline-flex h-9 w-9 items-center justify-center rounded-md border border-neutral-800 hover:bg-neutral-900"
@@ -461,7 +461,7 @@ export default function MailDashboard() {
                   }
                 }
               }}
-              className="w-full rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-neutral-700"
+              className="w-full min-w-0 rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-neutral-700"
               placeholder="Search emails (Enter)"
             />
             {search ? (
@@ -741,7 +741,7 @@ export default function MailDashboard() {
             <DetailSkeleton />
           ) : detail ? (
             <div className="flex-1 overflow-auto">
-              <div className="border-b border-neutral-800 p-5">
+              <div className="border-b border-neutral-800 p-5 overflow-x-hidden">
                 {/* Mobile back */}
                 <div className="md:hidden mb-2">
                   <button
@@ -752,7 +752,7 @@ export default function MailDashboard() {
                     Back
                   </button>
                 </div>
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 md:gap-4">
                   <div className="min-w-0">
                     <div className="flex items-center gap-3">
                       {detail.avatar ? (
@@ -771,9 +771,9 @@ export default function MailDashboard() {
                       </div>
                     </div>
                   </div>
-                  <div className="flex flex-col items-end gap-2 shrink-0 text-xs text-neutral-400">
-                    <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-1.5">
+                  <div className="w-full md:w-auto flex flex-row md:flex-col items-start md:items-end gap-2 shrink-0 text-xs text-neutral-400">
+                    <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-1.5">
                     <IconButton
                       label={detail.isStarred ? 'Unpin' : 'Pin'}
                       active={!!detail.isStarred}
@@ -904,7 +904,7 @@ export default function MailDashboard() {
               />
 
               {/* Thread (conversation) */}
-              <div className="px-4 pb-8 space-y-8">
+          <div className="px-4 pb-8 space-y-8 overflow-x-hidden max-w-full">
                 {threadMessages.map((m, idx) => (
                   <div key={m.id} className="group">
                     <div className="mb-2 text-xs text-neutral-500">
@@ -1797,9 +1797,20 @@ function sanitizeHtmlForDark(html: string): string {
   try {
     // Inject minimal CSS to force dark-friendly colors without heavy sanitization libs.
     const style = `<style>
+      /* Colors */
       body, p, span, div, td, th, li, a { color: rgba(235,235,245,0.92) !important; }
       a { color: #8ab4f8 !important; }
       table { color: rgba(235,235,245,0.92) !important; }
+      /* Contain width */
+      * { box-sizing: border-box !important; }
+      html, body { max-width: 100% !important; overflow-x: hidden !important; }
+      img, video, canvas, svg { max-width: 100% !important; height: auto !important; }
+      iframe { max-width: 100% !important; width: 100% !important; }
+      table { width: 100% !important; table-layout: fixed !important; }
+      td, th { word-break: break-word !important; }
+      pre { white-space: pre-wrap !important; word-break: break-word !important; }
+      code { word-break: break-word !important; }
+      p, div, a, li, td, th { word-break: break-word !important; overflow-wrap: anywhere !important; }
     </style>`
     // Place style tag at the top; if HTML already has <head>, insert inside it.
     if (/<head[\s\S]*?>/i.test(html)) {
@@ -1816,7 +1827,7 @@ function EmailHtmlFrame({ html }: { html: string }) {
   return (
     <div className="max-w-none overflow-x-hidden">
       <div
-        className="prose prose-invert max-w-none break-words [&_*]:!text-[unset] [&_*]:!leading-relaxed [&_h1]:!text-[1.125rem] [&_h2]:!text-[1.0625rem] [&_h3]:!text-[1rem] [&_p]:!text-[0.9375rem] [&_a]:!no-underline [&_a]:!text-blue-400 [&_a]:break-words [&_img]:max-w-full [&_img]:h-auto [&_pre]:whitespace-pre-wrap [&_code]:break-words [&_table]:w-full [&_table]:table-fixed [&_td]:break-words [&_th]:break-words [&_iframe]:max-w-full [&_iframe]:w-full"
+        className="prose prose-invert max-w-none break-words [&_*]:!text-[unset] [&_*]:!leading-relaxed [&_h1]:!text-[1.125rem] [&_h2]:!text-[1.0625rem] [&_h3]:!text-[1rem] [&_p]:!text-[0.9375rem] [&_a]:!no-underline [&_a]:!text-blue-400 [&_a]:break-words [&_img]:max-w-full [&_img]:h-auto [&_pre]:whitespace-pre-wrap [&_code]:break-words [&_table]:w-full [&_table]:table-fixed [&_td]:break-words [&_th]:break-words [&_iframe]:max-w-full [&_iframe]:w-full [&_blockquote]:break-words"
         style={{ fontSize: 'inherit', lineHeight: 'inherit' }}
         dangerouslySetInnerHTML={{ __html: html }}
       />
@@ -2035,14 +2046,14 @@ function SummaryCard({
 }) {
   return (
     <div className="m-4 rounded-xl border border-violet-700/60 bg-neutral-950/80 shadow-[0_0_48px_rgba(76,29,149,0.55)] ring-1 ring-violet-900/50">
-      <div className="w-full flex items-center justify-between gap-2 px-4 py-3">
-        <button className="flex items-center gap-2 text-left" onClick={onToggle}>
+      <div className="w-full flex flex-wrap items-center justify-between gap-2 px-4 py-3">
+        <button className="flex items-center gap-2 text-left min-w-0" onClick={onToggle}>
           <span className="text-sm text-neutral-300">{title}</span>
           <span className={`transition-transform ${expanded ? 'rotate-0' : '-rotate-90'}`}>▾</span>
         </button>
         {onAction ? (
           <button
-            className="rounded-md bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 px-3 py-1.5 text-xs"
+            className="rounded-md bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 px-3 py-1.5 text-xs shrink-0"
             disabled={actionDisabled}
             onClick={onAction}
           >
@@ -2051,7 +2062,7 @@ function SummaryCard({
         ) : null}
       </div>
       {expanded ? (
-        <div className="px-4 pb-4">
+        <div className="px-4 pb-4 break-words">
           {text ? (
             <div className="text-[15px] leading-7 text-neutral-200">{text}</div>
           ) : (
