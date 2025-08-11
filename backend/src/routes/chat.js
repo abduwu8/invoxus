@@ -189,9 +189,11 @@ Question: ${question}
     }
 
     const qLower = question.toLowerCase();
-    const askedToEmail = /(email|mail|send)\s/i.test(qLower);
+    // Detect explicit send intent; avoid misfiring on queries like "when did X mail me"
+    const isQuestionAboutMailbox = /(when|what|who|did|has|have|show|find|list|search|look|check)\b[\s\S]{0,40}\b(mail|email|inbox|message|messages)\b/i.test(qLower);
+    const explicitSendIntent = /(send|draft|compose|write|reply|forward)\b/i.test(qLower) || /(email|mail)\s+to\b/i.test(qLower);
 
-    if (askedToEmail && (!payload || payload.action !== 'send' || !payload.send || !payload.send.toEmail)) {
+    if (explicitSendIntent && !isQuestionAboutMailbox && (!payload || payload.action !== 'send' || !payload.send || !payload.send.toEmail)) {
       // Try to infer best recipient from results by matching a name/email that appears in the question
       let candidateEmail = '';
       // 1) If the question contains an email, use it

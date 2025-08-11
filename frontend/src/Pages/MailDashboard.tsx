@@ -674,8 +674,8 @@ export default function MailDashboard() {
           </div>
           {loading ? (
             <div className="flex-1 overflow-auto">
-              <ul className="divide-y divide-neutral-900">
-                {Array.from({ length: 8 }).map((_, i) => (
+              <ul className="divide-y divide-neutral-900 animate-pulse">
+                {Array.from({ length: 10 }).map((_, i) => (
                   <SkeletonRow key={i} />
                 ))}
               </ul>
@@ -1461,13 +1461,13 @@ function SkeletonRow() {
     <li className="p-3">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <div className="size-7 rounded-full bg-neutral-900 animate-pulse" />
-          <div className="h-4 w-48 rounded bg-neutral-900 animate-pulse" />
+          <div className="size-7 rounded-full bg-neutral-900" />
+          <div className="h-4 w-48 rounded bg-neutral-900" />
         </div>
-        <div className="h-3 w-14 rounded bg-neutral-900 animate-pulse" />
+        <div className="h-3 w-14 rounded bg-neutral-900" />
       </div>
-      <div className="mt-2 h-3 w-56 rounded bg-neutral-900 animate-pulse" />
-      <div className="mt-2 h-3 w-80 rounded bg-neutral-900 animate-pulse" />
+      <div className="mt-2 h-3 w-56 rounded bg-neutral-900" />
+      <div className="mt-2 h-3 w-80 rounded bg-neutral-900" />
     </li>
   )
 }
