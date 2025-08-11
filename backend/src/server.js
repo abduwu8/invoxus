@@ -62,10 +62,12 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-// Root
-app.get('/', (req, res) => {
-  res.send('Email backend is running.');
-});
+// Root (only in development). In production, SPA fallback serves index.html
+if (process.env.NODE_ENV !== 'production') {
+  app.get('/', (req, res) => {
+    res.send('Email backend is running.');
+  });
+}
 
 // Routes
 app.use('/api/auth', authRoutes);
