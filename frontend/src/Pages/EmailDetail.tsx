@@ -66,7 +66,7 @@ export default function EmailDetail({ id, onBack }: { id: string; onBack?: () =>
               setData((prev) => (prev ? { ...prev, summary: json.summary, importance: json.importance } : prev))
             } catch (e) {
               console.error(e)
-              alert('Failed to summarize')
+              import('sonner').then(({ toast }) => toast.error('Failed to summarize'))
             } finally {
               setSummarizing(false)
             }

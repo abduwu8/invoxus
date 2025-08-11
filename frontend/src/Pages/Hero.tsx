@@ -89,7 +89,7 @@ export default function Hero({ onLoggedIn }: Props) {
       codeClient.requestCode()
     } catch (e) {
       console.error(e)
-      alert('Failed to start Google sign in')
+      import('sonner').then(({ toast }) => toast.error('Failed to start Google sign in'))
     }
   }
   return (

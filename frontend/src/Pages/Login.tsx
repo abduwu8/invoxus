@@ -87,7 +87,7 @@ export default function Login({ onLoggedIn }: { onLoggedIn?: () => void }) {
               onLoggedIn?.()
             } catch (e) {
               console.error(e)
-              alert('Failed to sign in with Gmail access')
+              import('sonner').then(({ toast }) => toast.error('Failed to sign in with Gmail access'))
             }
           },
         })
