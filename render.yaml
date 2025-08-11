@@ -1,0 +1,34 @@
+services:
+  - type: web
+    name: invoxus-email
+    env: node
+    plan: free
+    rootDir: .
+    buildCommand: |
+      npm --prefix frontend ci && npm --prefix frontend run build && npm --prefix backend ci
+    startCommand: npm --prefix backend start
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: NODE_ENV
+        value: production
+      # Provide these in Render dashboard or here if non-sensitive
+      # - key: MONGODB_URI
+      #   sync: false
+      # - key: SESSION_SECRET
+      #   generateValue: true
+      # - key: GOOGLE_CLIENT_ID
+      #   sync: false
+      # - key: GOOGLE_CLIENT_SECRET
+      #   sync: false
+      # - key: GROQ_API_KEY
+      #   sync: false
+      # - key: INNGEST_APP_ID
+      #   sync: false
+      # - key: INNGEST_APP_NAME
+      #   sync: false
+      # - key: INNGEST_SIGNING_KEY
+      #   sync: false
+    healthCheckPath: /health
+

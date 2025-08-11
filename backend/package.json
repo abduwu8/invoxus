@@ -1,0 +1,28 @@
+{
+  "name": "email-backend",
+  "version": "1.0.0",
+  "description": "Backend server for Email project with MongoDB connection",
+  "main": "src/server.js",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "cookie-session": "^2.1.1",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0",
+    "googleapis": "^155.0.1",
+    "groq-sdk": "^0.30.0",
+    "html-to-text": "^9.0.5",
+    "@inngest/express": "^3.18.0",
+    "inngest": "^3.18.0",
+    "mongoose": "^8.17.1",
+    "morgan": "^1.10.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
