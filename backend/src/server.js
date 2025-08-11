@@ -79,8 +79,8 @@ app.use('/api/cold-email', coldEmailRoutes);
 if (process.env.NODE_ENV === 'production') {
   const distPath = path.join(__dirname, '../../frontend/dist');
   app.use(express.static(distPath));
-  // SPA fallback after API routes (Express v5 requires a valid pattern)
-  app.get('/*', (req, res) => {
+  // SPA fallback after API routes using a regex (compatible with Express v5)
+  app.get(/^(?!\/api\/).*/, (req, res) => {
     res.sendFile(path.join(distPath, 'index.html'));
   });
 }
