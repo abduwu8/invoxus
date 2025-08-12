@@ -18,28 +18,44 @@ router.post('/generate', async (req, res) => {
     const tokens = req.session && req.session.tokens;
     if (!tokens) return res.status(401).json({ error: 'Not authenticated' });
 
-    const { to, keywords = '', role = 'HR', company = '' } = req.body || {};
-    if (!to) return res.status(400).json({ error: 'Missing recipient email (to)' });
+    const { to = '', keywords = '', role = 'HR', company = '' } = req.body || {};
+
+    // Normalize keywords to work well with single or multiple inputs
+    const keywordsList = String(keywords)
+      .split(/[,\n]/)
+      .flatMap((part) => String(part).split(/\s+/))
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const keywordsForPrompt = keywordsList.length ? keywordsList.slice(0, 12).join(', ') : 'intro, fit, value, quick call';
 
     const groqApiKey = process.env.GROQ_API_KEY;
     if (!groqApiKey) return res.status(200).json({ to, subject: 'Hello', body: 'Please set GROQ_API_KEY on the server.', reason: 'Missing GROQ_API_KEY' });
 
     const groq = new Groq({ apiKey: groqApiKey });
-    const prompt = `You are a cold email copy expert.
-Create a concise, personalized cold email to ${role} at ${company || 'the company'}, based on the following keywords:
-${String(keywords)}
+    const prompt = `You are a senior B2B cold email copywriter.
+Draft a short, personalized cold email for a ${role} at ${company || 'their company'}.
 
-Return strict JSON with fields: subject (<=70 chars), body (4-7 short sentences in 2-3 paragraphs, plain text, no markdown),
-and a one-sentence reason summarizing the value proposition.`;
+Context keywords (may be one or many): ${keywordsForPrompt}
+
+Requirements:
+- subject: <= 70 characters, no brackets, no emojis, no clickbait
+- body: 90–140 words total in 2 short paragraphs plus a one-line CTA
+- personalize to the role/company; reference ONE concrete benefit or outcome
+- avoid clichés, fluff, and markdown; keep it plain text
+- end with a soft CTA (e.g., "open to a quick 10-minute chat?") and a signature placeholder "— [Your Name]"
+
+Return STRICT JSON only with keys:
+{ "subject": string, "body": string, "reason": string }
+Where "reason" is a concise 6–12 word summary of the angle used.`;
 
     // Call Groq without unsupported fetch signal; enforce timeout by Promise.race
     const request = groq.chat.completions.create({
-      model: process.env.GROQ_MODEL || 'openai/gpt-oss-20b',
+      model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
       messages: [
         { role: 'system', content: 'You are a helpful assistant. Always return STRICT JSON.' },
         { role: 'user', content: prompt },
       ],
-      temperature: 0.4,
+      temperature: 0.25,
       max_tokens: 600,
     })
     const withTimeout = new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 15000))
@@ -61,17 +77,25 @@ and a one-sentence reason summarizing the value proposition.`;
       draft = JSON.parse(text);
     } catch {
       // Fallback: synthesize minimal draft if model returned non-JSON or empty
-      const fallbackSubject = `Quick intro about ${company || role}`.slice(0, 70);
+      const fallbackSubject = `Quick intro — ${company || role}`.slice(0, 70);
       const fallbackBody = (
         `Hi ${role},\n\n` +
-        `I wanted to reach out regarding ${company || 'your team'}. ` +
-        `Keywords: ${String(keywords).slice(0, 200)}.\n\n` +
-        `Would love to share how I can help.\n\nBest,\n`
+        `Reaching out ${company ? `to ${company}` : ''} because I noticed a potential fit around ${keywordsList[0] || 'improving workflows'}. ` +
+        `I can help with a fast, low-lift approach that typically shows value in weeks, not months.\n\n` +
+        `Open to a quick 10-minute chat?\n\n— [Your Name]`
       ).slice(0, 1500);
-      draft = { subject: fallbackSubject, body: fallbackBody, reason: 'Fallback draft due to model error' };
+      draft = { subject: fallbackSubject, body: fallbackBody, reason: 'Fallback draft due to model output issue' };
     }
 
-    res.json({ to, subject: draft.subject, body: draft.body, reason: draft.reason });
+    // Ensure minimal shape
+    const subjectOut = String(draft.subject || '').trim().slice(0, 120) || `Intro for ${company || role}`.slice(0, 70);
+    const bodyOut = String(draft.body || '').trim().slice(0, 2000) || (
+      `Hi ${role},\n\n` +
+      `Wanted to share a quick idea related to ${keywordsList[0] || 'your priorities'}.\n\n` +
+      `Open to a quick 10-minute chat?\n\n— [Your Name]`
+    );
+
+    res.json({ to, subject: subjectOut, body: bodyOut, reason: draft.reason });
   } catch (err) {
     console.error('Cold email generate error:', err?.response?.data || err);
     res.status(500).json({ error: 'Failed to generate cold email' });

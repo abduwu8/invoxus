@@ -86,15 +86,41 @@ Return JSON ONLY: { queries: string[] }`;
     } catch {}
     if (!queries.length) queries = ['in:inbox'];
 
+    // Try to extract a target name from the question to bias search (e.g., "send email to Irfan Khan")
+    function extractTargetNameTokens(text = '') {
+      const t = String(text).toLowerCase();
+      // Common patterns around "send ... to <name> ..."
+      const m = t.match(/(?:send|email|mail|compose|write)\b[\s\S]{0,40}?\bto\b\s+([^,\n]+?)(?:\s+(?:saying|that|about|regarding|with)\b|$)/i);
+      const raw = m ? m[1] : '';
+      const cleaned = raw
+        .replace(/[^a-z\s@._-]/gi, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      const stop = new Set(['an', 'a', 'the', 'mr', 'mrs', 'ms', 'dr']);
+      return cleaned
+        .split(' ')
+        .map((s) => s.trim())
+        .filter((s) => s && !stop.has(s));
+    }
+    const targetNameTokens = extractTargetNameTokens(question);
+    if (targetNameTokens.length) {
+      const nameQuery = targetNameTokens
+        .map((tok) => `(from:${tok} OR to:${tok})`)
+        .join(' ');
+      queries.unshift(nameQuery);
+    }
+
     // Run each query and collect message headers
     const results = [];
     const participantsSet = new Set();
     let detailedCount = 0;
     for (const q of queries) {
       try {
-        const list = await gmail.users.messages.list({ userId: 'me', labelIds: ['INBOX'], q, maxResults: 25 });
-        const items = list.data.messages || [];
-        for (const m of items) {
+        const targetLabels = [['INBOX'], ['SENT']];
+        for (const labelIds of targetLabels) {
+          const list = await gmail.users.messages.list({ userId: 'me', labelIds, q, maxResults: 25 });
+          const items = list.data.messages || [];
+          for (const m of items) {
           const useFull = detailedCount < 5; // include full bodies for first few
           const { data } = await gmail.users.messages.get({
             userId: 'me',
@@ -118,6 +144,8 @@ Return JSON ONLY: { queries: string[] }`;
           if (h['From']) participantsSet.add(h['From']);
           if (h['To']) participantsSet.add(h['To']);
           if (results.length >= 60) break;
+          }
+          if (results.length >= 60) break;
         }
         if (results.length >= 60) break;
       } catch (e) {
@@ -125,9 +153,70 @@ Return JSON ONLY: { queries: string[] }`;
       }
     }
 
+    // Fallback enrichment: if few results and we have a target person, scan recent inbox+sent and fuzzy match locally
+    async function enrichWithRecentIfNeeded() {
+      try {
+        if (results.length >= 8 || targetNameTokens.length === 0) return;
+        const labelSets = [['INBOX'], ['SENT']];
+        const recent = [];
+        for (const labelIds of labelSets) {
+          const page = await gmail.users.messages.list({ userId: 'me', labelIds, maxResults: 100 });
+          const items = page.data.messages || [];
+          for (const m of items) {
+            const { data } = await gmail.users.messages.get({
+              userId: 'me',
+              id: m.id,
+              format: 'metadata',
+              metadataHeaders: ['Subject', 'From', 'To', 'Date'],
+            });
+            const h = parseHeaders(data.payload?.headers || []);
+            const candidate = {
+              id: m.id,
+              subject: h['Subject'] || '',
+              from: h['From'] || '',
+              to: h['To'] || '',
+              date: h['Date'] || '',
+              snippet: data.snippet || '',
+              bodyHtml: '',
+              bodyText: '',
+            };
+            const fromScore = scoreParticipant(candidate.from, targetNameTokens);
+            const toScore = scoreParticipant(candidate.to, targetNameTokens);
+            const maxScore = Math.max(fromScore, toScore);
+            if (maxScore >= 3) {
+              recent.push({ ...candidate, matchScore: maxScore });
+            }
+            if (recent.length >= 40) break;
+          }
+        }
+        if (recent.length) {
+          // Deduplicate by id and merge into results
+          const byId = new Map(results.map((r) => [r.id, r]));
+          for (const r of recent) {
+            if (!byId.has(r.id)) {
+              byId.set(r.id, r);
+              results.push(r);
+            }
+            if (r.from) participantsSet.add(r.from);
+            if (r.to) participantsSet.add(r.to);
+          }
+        }
+      } catch {
+        // best effort
+      }
+    }
+
+    await enrichWithRecentIfNeeded();
+
     // Ask LLM to answer using the collected context
     const ctx = JSON.stringify(results, null, 2);
     // Build compact context: cap messages and body length to reduce tokens
+    // Sort results by date descending so "last" queries are easier
+    function toTs(d = '') {
+      const t = new Date(d || 0).getTime();
+      return Number.isFinite(t) ? t : 0;
+    }
+    results.sort((a, b) => toTs(b.date) - toTs(a.date));
     let compact = results.slice(0, 12).map((r) => {
       const body = r.bodyText || htmlToText(r.bodyHtml || '', { wordwrap: false });
       const preview = (body || r.snippet || '').slice(0, 600);
@@ -147,7 +236,8 @@ Return JSON ONLY: { queries: string[] }`;
 
     const participants = Array.from(participantsSet).slice(0, 20).join('\n');
     const aPrompt = `You are an email assistant. Given the user's question and a concise list of matching emails, answer precisely.
-If the user asks to email someone, infer intent and return an action with fields.
+If the user asks to email someone, infer intent and return an action with fields. If intent is clearly to send an email now (e.g., "send an email to X saying Y"), set action to "send" and provide toEmail/subject/body directly, suitable to send without further confirmation.
+If asked things like "last mail from <name>", prefer emails whose From or To display-name or email matches the tokens below.
 
 Return JSON ONLY with this shape:
 {
@@ -159,12 +249,13 @@ Return JSON ONLY with this shape:
 }
 
 Participants (name and/or email):\n${participants}
+Target tokens (from user): ${targetNameTokens.join(', ') || 'none'}
 
 Question: ${question}
  Emails: ${JSON.stringify(compact)}`;
 
     const answerText = await groq.chat.completions.create({
-      model: 'openai/gpt-oss-20b',
+      model: 'openai/gpt-oss-120b',
       messages: [
         { role: 'system', content: 'Return strict JSON only.' },
         { role: 'user', content: aPrompt },
@@ -187,6 +278,29 @@ Question: ${question}
       const nameMatch = String(headerVal).match(/"?([^"<]+)"?\s*<.+?>/);
       return nameMatch ? nameMatch[1].trim() : headerVal.split('<')[0].trim();
     }
+    function normalize(s = '') {
+      return String(s).toLowerCase().replace(/[^a-z0-9@._\s-]/g, ' ').replace(/\s+/g, ' ').trim();
+    }
+    function tokenize(s = '') {
+      return normalize(s)
+        .split(' ')
+        .filter(Boolean);
+    }
+    function scoreParticipant(participantHeader = '', queryTokens = []) {
+      const name = nameFromAddress(participantHeader);
+      const email = extractEmail(participantHeader);
+      const nameTokens = tokenize(name);
+      const emailLocal = email.split('@')[0] || '';
+      const emailTokens = tokenize(emailLocal.replace(/[._-]/g, ' '));
+      let score = 0;
+      for (const qt of queryTokens) {
+        if (nameTokens.includes(qt)) score += 3;
+        if (emailTokens.includes(qt)) score += 2;
+        if (normalize(name).includes(qt)) score += 1;
+      }
+      // Prefer recent senders in results by giving a tiny bias later via order
+      return score;
+    }
 
     const qLower = question.toLowerCase();
     // Detect explicit send intent; avoid misfiring on queries like "when did X mail me"
@@ -200,9 +314,18 @@ Question: ${question}
       candidateEmail = extractEmail(question);
       // 2) Else, fuzzy match a name fragment against participants
       if (!candidateEmail) {
+        const qTokens = targetNameTokens.length ? targetNameTokens : tokenize(qLower);
         const parts = Array.from(participantsSet);
-        const best = parts.find((p) => qLower.includes(nameFromAddress(p).toLowerCase()));
-        if (best) candidateEmail = extractEmail(best) || best;
+        let best = '';
+        let bestScore = -1;
+        for (const p of parts) {
+          const s = scoreParticipant(p, qTokens);
+          if (s > bestScore) {
+            bestScore = s;
+            best = p;
+          }
+        }
+        if (bestScore > 0 && best) candidateEmail = extractEmail(best) || best;
       }
       // 3) Else, choose the sender of the first result
       if (!candidateEmail && results.length) {

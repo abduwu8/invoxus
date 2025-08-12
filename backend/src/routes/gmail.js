@@ -261,7 +261,7 @@ router.get('/messages/suggest-deletions', async (req, res) => {
       })
     );
 
-    // Apply simple heuristics
+    // Apply simple heuristics as baseline
     const patterns = [
       /unsubscribe/i,
       /newsletter/i,
@@ -270,7 +270,7 @@ router.get('/messages/suggest-deletions', async (req, res) => {
       /notification/i,
       /digest/i,
     ];
-    const suggestions = details
+    let baseline = details
       .map((d) => {
         const hay = `${d.subject}\n${d.from}\n${d.snippet}`;
         const matched = patterns.find((p) => p.test(hay));
@@ -282,9 +282,63 @@ router.get('/messages/suggest-deletions', async (req, res) => {
         return { ...d, reason, score };
       })
       .filter((d) => d.score >= 1)
-      .slice(0, 200)
-      .map(({ labelIds, score, ...rest }) => rest);
+      .slice(0, 300);
 
+    // If explicitly requested via ?ai=1, refine with AI classifier; default is FAST heuristics only
+    const groqApiKey = process.env.GROQ_API_KEY;
+    const useAI = ['1', 'true', 'yes'].includes(String(req.query.ai || '0').toLowerCase());
+    if (groqApiKey && useAI && baseline.length) {
+      try {
+        const groq = new Groq({ apiKey: groqApiKey });
+        const toClassify = baseline.slice(0, 80); // tighter cap for latency
+        const concurrency = 6;
+        let idx = 0;
+        const refined = [];
+        await Promise.all(
+          Array.from({ length: Math.min(concurrency, toClassify.length) }).map(async () => {
+            while (idx < toClassify.length) {
+              const i = idx++;
+              const d = toClassify[i];
+              try {
+                const prompt = `You are an email triage assistant. Decide if this message is low-value (promotions, newsletters, social digests, generic notifications, marketing blasts) and safe to move to Trash. Avoid deleting personal emails, receipts, invoices, OTPs, confirmations, or threads with ongoing conversation.
+
+Return STRICT JSON: { "delete": boolean, "reason": string }
+
+Subject: ${d.subject}\nFrom: ${d.from}\nSnippet: ${d.snippet}\nLabels: ${(d.labelIds || []).join(', ')}`;
+                const completion = await groq.chat.completions.create({
+                  model: 'openai/gpt-oss-20b',
+                  messages: [
+                    { role: 'system', content: 'Return strict JSON only.' },
+                    { role: 'user', content: prompt },
+                  ],
+                  temperature: 0,
+                  max_tokens: 150,
+                });
+                const text = completion.choices?.[0]?.message?.content || '{}';
+                let decision = { delete: false, reason: '' };
+                try {
+                  decision = JSON.parse(text);
+                } catch {}
+                if (decision && decision.delete) {
+                  refined.push({ id: d.id, threadId: d.threadId, subject: d.subject, from: d.from, date: d.date, snippet: d.snippet, reason: decision.reason || d.reason });
+                }
+              } catch {
+                // Ignore AI failures per-item; fall back to baseline
+                refined.push({ id: d.id, threadId: d.threadId, subject: d.subject, from: d.from, date: d.date, snippet: d.snippet, reason: d.reason });
+              }
+            }
+          })
+        );
+        // If AI produced any, prefer refined; else fallback to baseline
+        if (refined.length) {
+          return res.json({ messages: refined.slice(0, 200) });
+        }
+      } catch (e) {
+        // On global AI error, just fall back
+      }
+    }
+
+    const suggestions = baseline.map(({ labelIds, score, ...rest }) => rest).slice(0, 200);
     res.json({ messages: suggestions });
   } catch (err) {
     console.error('Suggest deletions error:', err?.response?.data || err);
@@ -851,25 +905,119 @@ router.post('/messages/send', async (req, res) => {
 
     const oauth2Client = createOAuthClientFromSession(tokens);
     const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
-    const { to = '', cc = '', bcc = '', subject = '', body = '' } = req.body || {};
+    const { to = '', cc = '', bcc = '', subject = '', body = '', attachments = [] } = req.body || {};
     if (!to) return res.status(400).json({ error: 'Missing recipient' });
 
-    const headers = [
-      `To: ${to}`,
-      cc ? `Cc: ${cc}` : '',
-      bcc ? `Bcc: ${bcc}` : '',
-      `Subject: ${subject}`,
-      'Content-Type: text/plain; charset="UTF-8"',
-    ]
-      .filter(Boolean)
-      .join('\r\n');
-    const raw = `${headers}\r\n\r\n${body}`;
+    // Build MIME message (supports optional attachments)
+    let raw = '';
+    if (Array.isArray(attachments) && attachments.length > 0) {
+      const boundary = 'invoxus-' + Math.random().toString(36).slice(2);
+      const lines = [];
+      lines.push(`To: ${to}`);
+      if (cc) lines.push(`Cc: ${cc}`);
+      if (bcc) lines.push(`Bcc: ${bcc}`);
+      lines.push(`Subject: ${subject}`);
+      lines.push('MIME-Version: 1.0');
+      lines.push(`Content-Type: multipart/mixed; boundary="${boundary}"`);
+      lines.push('');
+      // Text part
+      lines.push(`--${boundary}`);
+      lines.push('Content-Type: text/plain; charset="UTF-8"');
+      lines.push('Content-Transfer-Encoding: 7bit');
+      lines.push('');
+      lines.push(String(body || ''));
+      // Attachments
+      for (const att of attachments) {
+        if (!att || !att.filename || !att.dataBase64) continue;
+        const fname = String(att.filename);
+        const ctype = String(att.contentType || 'application/octet-stream');
+        const cleanBase64 = String(att.dataBase64).replace(/^data:[^;]+;base64,/, '');
+        lines.push(`--${boundary}`);
+        lines.push(`Content-Type: ${ctype}; name="${fname}"`);
+        lines.push('Content-Transfer-Encoding: base64');
+        lines.push(`Content-Disposition: attachment; filename="${fname}"`);
+        lines.push('');
+        // Split long base64 into lines (RFC compliance)
+        lines.push(cleanBase64.replace(/.{1,76}/g, '$&\r\n'));
+      }
+      lines.push(`--${boundary}--`);
+      raw = lines.join('\r\n');
+    } else {
+      const headers = [
+        `To: ${to}`,
+        cc ? `Cc: ${cc}` : '',
+        bcc ? `Bcc: ${bcc}` : '',
+        `Subject: ${subject}`,
+        'Content-Type: text/plain; charset="UTF-8"',
+      ]
+        .filter(Boolean)
+        .join('\r\n');
+      raw = `${headers}\r\n\r\n${body}`;
+    }
     const encodedMessage = Buffer.from(raw).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
     await gmail.users.messages.send({ userId: 'me', requestBody: { raw: encodedMessage } });
     res.json({ sent: true });
   } catch (err) {
     console.error('Send error:', err?.response?.data || err);
     res.status(500).json({ error: 'Failed to send message' });
+  }
+});
+
+// Top correspondents/contacts (from recent INBOX and SENT headers)
+router.get('/contacts', async (req, res) => {
+  try {
+    const tokens = req.session && req.session.tokens;
+    if (!tokens) return res.status(401).json({ error: 'Not authenticated' });
+
+    const oauth2Client = createOAuthClientFromSession(tokens);
+    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+    const limitParam = String(req.query.limit || '400');
+    const maxCount = Math.max(50, Math.min(1200, parseInt(limitParam) || 400));
+
+    const labelSets = [['INBOX'], ['SENT']];
+    const counts = new Map(); // key -> { name, email, count }
+    for (const labelIds of labelSets) {
+      let remaining = maxCount;
+      let pageToken = undefined;
+      do {
+        const pageSize = Math.min(200, Number.isFinite(remaining) ? remaining : 200);
+        const page = await gmail.users.messages.list({ userId: 'me', labelIds, maxResults: pageSize, pageToken });
+        const items = page.data.messages || [];
+        for (const m of items) {
+          const { data } = await gmail.users.messages.get({ userId: 'me', id: m.id, format: 'metadata', metadataHeaders: ['From', 'To'] });
+          const headers = parseHeaders(data.payload?.headers || []);
+          const pair = [headers['From'] || '', headers['To'] || ''];
+          for (const headerVal of pair) {
+            const matches = String(headerVal)
+              .split(',')
+              .map((s) => s.trim())
+              .filter(Boolean);
+            for (const v of matches) {
+              const emailMatch = v.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+              const email = emailMatch ? emailMatch[0] : '';
+              if (!email) continue;
+              const nameMatch = v.match(/"?([^"<]+)"?\s*<.+?>/);
+              const name = (nameMatch ? nameMatch[1] : v.split('<')[0]).trim();
+              const key = `${name}|${email}`.toLowerCase();
+              const prev = counts.get(key) || { name, email, count: 0 };
+              prev.count += 1;
+              counts.set(key, prev);
+            }
+          }
+        }
+        if (Number.isFinite(remaining)) remaining -= items.length;
+        pageToken = page.data.nextPageToken;
+      } while (pageToken && (!Number.isFinite(remaining) || remaining > 0));
+    }
+
+    const contacts = Array.from(counts.values())
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 500);
+
+    res.json({ contacts });
+  } catch (err) {
+    console.error('Contacts error:', err?.response?.data || err);
+    res.status(500).json({ error: 'Failed to fetch contacts' });
   }
 });
 
