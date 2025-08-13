@@ -12,10 +12,6 @@ function App() {
 
   // Minimal hash-based routing for marketing pages (reactive)
   useEffect(() => {
-    // Always reset hash on initial load so we land on Hero
-    if (window.location.hash) {
-      window.location.hash = ''
-    }
     const handle = () => setRoute(window.location.hash.replace(/^#/, ''))
     window.addEventListener('hashchange', handle)
     // In case something changed the hash before mount
@@ -23,7 +19,7 @@ function App() {
     return () => window.removeEventListener('hashchange', handle)
   }, [])
 
-  if (route === 'terms') return <Terms />
+  if (route === 'terms' || route === 'privacy' || route === 'privacy-policy') return <Terms />
   if (showHero) return <Hero onLoggedIn={() => { setLoggedIn(true); setShowHero(false) }} />
   // Example route to preview the marketing page similar to the screenshot
   // return <Speed />
