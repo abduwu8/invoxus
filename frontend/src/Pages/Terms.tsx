@@ -112,7 +112,8 @@ export default function Terms() {
               <p className="mt-3 text-neutral-300">
                 Invoxus is a solo-developed initiative, built with care and attention to detail. If you have questions, concerns,
                 or constructive feedback, please don’t hesitate to reach out. We strive to respond to inquiries as promptly as
-                possible and value your input in helping improve the app.
+                possible and value your input in helping improve the app. You can contact us at
+                {' '}<a className="underline" href="mailto:contact@invoxus.in">contact@invoxus.in</a>.
               </p>
             </section>
           </div>
