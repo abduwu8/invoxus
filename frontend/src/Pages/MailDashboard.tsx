@@ -376,7 +376,7 @@ export default function MailDashboard() {
         {sidebarOpen ? (
           <div className="fixed inset-0 z-40 md:hidden">
             <div className="absolute inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
-            <div className="absolute inset-y-0 left-0 w-72 max-w-[85vw] border-r border-neutral-800 bg-neutral-950 p-3 overflow-y-auto">
+            <div className="absolute inset-y-0 left-0 w-72 max-w-[85vw] border-r border-neutral-800 bg-neutral-950 p-3 flex flex-col overflow-hidden">
               <div className="flex items-center justify-between mb-2">
                 <div className="text-sm text-neutral-400">Menu</div>
                 <button
