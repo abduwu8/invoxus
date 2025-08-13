@@ -327,7 +327,7 @@ export default function Hero({ onLoggedIn }: Props) {
         <div className="absolute top-0 left-0 right-0 z-0 pointer-events-none h-[60%] md:h-[65%] lg:h-[70%] bg-gradient-to-b from-black/95 via-black/90 to-transparent" />
         {/* Content */}
         <div className="relative z-10 mx-auto max-w-7xl px-6 py-20 sm:py-28 lg:py-36 text-center">
-          <h2 className="font-extrabold tracking-tight text-neutral-100/80 text-5xl sm:text-7xl lg:text-8xl leading-tight break-words">
+          <h2 className="font-extrabold tracking-tight text-neutral-100/80 text-4xl sm:text-6xl md:text-7xl lg:text-8xl leading-tight break-keep" style={{ hyphens: 'none' }}>
           Revolutionizing the Way You Email
           </h2>
           <p className="mt-6 text-neutral-100/70 text-lg sm:text-xl md:text-2xl max-w-4xl mx-auto">
