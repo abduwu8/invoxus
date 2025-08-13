@@ -258,6 +258,7 @@ export default function MailDashboard() {
     if (key === 'inbox') {
       setSelectedCategory(null)
       setAiDeleteMode(false)
+      setUnsubscribeMode(false)
       setSelectedForDelete(new Set())
       setShowingSuggestions(false)
       setShowingOtps(false)
@@ -275,6 +276,7 @@ export default function MailDashboard() {
     if (key === 'sent') {
       setSelectedCategory(null)
       setAiDeleteMode(false)
+      setUnsubscribeMode(false)
       setSelectedForDelete(new Set())
       setShowingSuggestions(false)
       setShowingOtps(false)
@@ -297,6 +299,7 @@ export default function MailDashboard() {
     try {
       setSelectedCategory(null)
       setAiDeleteMode(false)
+      setUnsubscribeMode(false)
       setSelectedForDelete(new Set())
       setShowingSuggestions(false)
       setShowingOtps(true)
@@ -317,6 +320,7 @@ export default function MailDashboard() {
     try {
       setSelectedCategory(null)
       setAiDeleteMode(true)
+      setUnsubscribeMode(false)
       setSelectedForDelete(new Set())
       setShowingSuggestions(true)
       setShowingOtps(false)
