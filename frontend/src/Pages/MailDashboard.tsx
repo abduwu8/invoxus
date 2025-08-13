@@ -77,6 +77,7 @@ export default function MailDashboard() {
   const [showingOtps, setShowingOtps] = useState(false)
   const [selectedForDelete, setSelectedForDelete] = useState<Set<string>>(new Set())
   const [aiDeleteMode, setAiDeleteMode] = useState(false)
+  const [unsubscribeMode, setUnsubscribeMode] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const chatSuggestions = [
     'Recent design feedback',
@@ -322,6 +323,8 @@ export default function MailDashboard() {
       setLoading(true)
       const url = buildApiUrl('/api/gmail/messages/suggest-deletions')
       url.searchParams.set('limit', '200')
+      url.searchParams.set('strict', '1')
+      url.searchParams.set('ai', '1')
       if (search.trim()) url.searchParams.set('q', search.trim())
       const r = await fetch(url.toString(), { credentials: 'include' })
       if (r.ok) {
@@ -330,6 +333,37 @@ export default function MailDashboard() {
       }
     } catch {
     } finally {
+      setLoading(false)
+      onAfterAction?.()
+    }
+  }
+
+  async function handleShowUnsubscribe(onAfterAction?: () => void) {
+    try {
+      setSelectedCategory(null)
+      setAiDeleteMode(false)
+      setShowingOtps(false)
+      setShowingSuggestions(false)
+      setUnsubscribeMode(true)
+      setLoading(true)
+      const url = buildApiUrl('/api/gmail/unsubscribe/suggestions')
+      url.searchParams.set('limit', '200')
+      const r = await fetch(url.toString(), { credentials: 'include' })
+      if (r.ok) {
+        const j = await r.json()
+        // Map suggestions into the email list shape for rendering
+        const list = ((j.suggestions as any[]) || []).map((s) => ({
+          id: s.id,
+          threadId: s.threadId,
+          subject: s.subject || '',
+          from: s.from || '',
+          date: s.date || '',
+          snippet: s.hasOneClick ? 'One‑click unsubscribe available' : 'Unsubscribe available',
+        }))
+        setEmails(list)
+      }
+    } catch {}
+    finally {
       setLoading(false)
       onAfterAction?.()
     }
@@ -358,8 +392,9 @@ export default function MailDashboard() {
                 leftItems={leftItems}
                 onCompose={() => { setComposeOpen(true); setSidebarOpen(false) }}
                 onLeftItemClick={(key) => handleLeftItemClick(key, () => setSidebarOpen(false))}
-                onShowOtps={() => handleShowOtps(() => setSidebarOpen(false))}
-                onShowAiDelete={() => handleShowAiDelete(() => setSidebarOpen(false))}
+            onShowOtps={() => handleShowOtps(() => setSidebarOpen(false))}
+            onShowAiDelete={() => handleShowAiDelete(() => setSidebarOpen(false))}
+            onShowUnsubscribe={() => handleShowUnsubscribe(() => setSidebarOpen(false))}
                 categories={categories}
                 onAddCategory={async (name) => {
                   const r = await fetch(`${API_BASE}/api/gmail/categories`, {
@@ -400,6 +435,7 @@ export default function MailDashboard() {
             onLeftItemClick={(key) => handleLeftItemClick(key)}
             onShowOtps={() => handleShowOtps()}
             onShowAiDelete={() => handleShowAiDelete()}
+            onShowUnsubscribe={() => handleShowUnsubscribe()}
             categories={categories}
             onAddCategory={async (name) => {
               const r = await fetch(`${API_BASE}/api/gmail/categories`, {
@@ -502,6 +538,8 @@ export default function MailDashboard() {
                       setLoading(true)
                       const url = buildApiUrl('/api/gmail/messages/suggest-deletions')
                       url.searchParams.set('limit', '200')
+                      url.searchParams.set('strict', '1')
+                      url.searchParams.set('ai', '1')
                       if (search.trim()) url.searchParams.set('q', search.trim())
                       const r = await fetch(url.toString(), { credentials: 'include' })
                       if (!r.ok) throw new Error('Failed')
@@ -650,6 +688,95 @@ export default function MailDashboard() {
                   <X className="size-4" />
                 </button>
               </div>
+            ) : unsubscribeMode ? (
+              <div className="flex items-center gap-1 ml-2">
+                <button
+                  className="size-8 grid place-items-center rounded-md border border-neutral-800 hover:bg-neutral-900"
+                  title="Refresh unsubscribe suggestions"
+                  aria-label="Refresh unsubscribe suggestions"
+                  onClick={async () => {
+                    try {
+                      setLoading(true)
+                      const url = buildApiUrl('/api/gmail/unsubscribe/suggestions')
+                      url.searchParams.set('limit', '200')
+                      const r = await fetch(url.toString(), { credentials: 'include' })
+                      if (!r.ok) throw new Error('Failed')
+                      const j = await r.json()
+                      const list = ((j.suggestions as any[]) || []).map((s: any) => ({
+                        id: s.id,
+                        threadId: s.threadId,
+                        subject: s.subject || '',
+                        from: s.from || '',
+                        date: s.date || '',
+                        snippet: s.hasOneClick ? 'One‑click unsubscribe available' : 'Unsubscribe available',
+                      }))
+                      setEmails(list)
+                      setSelectedForDelete(new Set())
+                    } catch (e) {
+                      setError('Failed to refresh unsubscribe suggestions')
+                    } finally {
+                      setLoading(false)
+                    }
+                  }}
+                >
+                  <Sparkles className="size-4 text-emerald-300" />
+                </button>
+                <button
+                  className="size-8 grid place-items-center rounded-md border border-neutral-800 hover:bg-neutral-900"
+                  title="Select all shown"
+                  aria-label="Select all shown"
+                  onClick={() => setSelectedForDelete(new Set(shownIds))}
+                >
+                  <CheckSquare className="size-4" />
+                </button>
+                <button
+                  disabled={selectedForDelete.size === 0}
+                  className={`size-8 grid place-items-center rounded-md border ${selectedForDelete.size === 0 ? 'border-neutral-900 text-neutral-600' : 'border-emerald-700/40 text-emerald-300 hover:bg-emerald-600/10'}`}
+                  title="Unsubscribe selected"
+                  aria-label="Unsubscribe selected"
+                  onClick={async () => {
+                    if (selectedForDelete.size === 0) return
+                    const ok = window.confirm(`Unsubscribe using available links for ${selectedForDelete.size} selected email(s)?`)
+                    if (!ok) return
+                    try {
+                      const ids = Array.from(selectedForDelete)
+                      const r = await fetch(`${API_BASE}/api/gmail/unsubscribe/execute`, {
+                        method: 'POST',
+                        credentials: 'include',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ids, confirm: true }),
+                      })
+                      if (!r.ok) throw new Error('Failed')
+                      const j = await r.json()
+                      const okIds = new Set<string>((j.results || []).filter((x: any) => x.ok).map((x: any) => x.id))
+                      if (okIds.size > 0) {
+                        setEmails((list) => list.filter((m) => !okIds.has(m.id)))
+                        if (selectedId && okIds.has(selectedId)) {
+                          setDetail(null)
+                          setSelectedId(null)
+                        }
+                      }
+                      import('sonner').then(({ toast }) => toast.success(`Unsubscribed ${j.success || 0} thread(s)`))
+                      setSelectedForDelete(new Set())
+                    } catch (e) {
+                      import('sonner').then(({ toast }) => toast.error('Unsubscribe failed'))
+                    }
+                  }}
+                >
+                  <Trash2 className="size-4" />
+                </button>
+                <button
+                  className="size-8 grid place-items-center rounded-md border border-neutral-800 hover:bg-neutral-900"
+                  title="Exit Smart unsubscribe"
+                  aria-label="Exit Smart unsubscribe"
+                  onClick={() => {
+                    setUnsubscribeMode(false)
+                    setSelectedForDelete(new Set())
+                  }}
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
             ) : null}
           </div>
           {loading ? (
@@ -672,6 +799,17 @@ export default function MailDashboard() {
                     <div className="flex-1 min-w-0">
                       <div className="text-sm text-neutral-200 font-medium">Invoxus is scanning for OTPs…</div>
                       <div className="text-xs text-neutral-400 mt-1">Detecting verification codes across recent messages.</div>
+                      <div className="mt-3 pl-1 pb-1"><LoaderOne /></div>
+                    </div>
+                  </div>
+                </div>
+              ) : unsubscribeMode ? (
+                <div className="px-2 pt-2">
+                  <div className="rounded-lg border border-emerald-800/30 bg-emerald-950/20 p-4 flex items-start gap-3">
+                    <Sparkles className="size-5 text-emerald-300 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm text-neutral-200 font-medium">Invoxus is fetching unsubscribe options…</div>
+                      <div className="text-xs text-neutral-400 mt-1">Looking for one‑click and email‑based unsubscribe links.</div>
                       <div className="mt-3 pl-1 pb-1"><LoaderOne /></div>
                     </div>
                   </div>
@@ -714,6 +852,8 @@ export default function MailDashboard() {
                 <SectionHeader title={
                   showingOtps
                     ? 'OTPs'
+                    : unsubscribeMode
+                    ? 'Smart unsubscribe'
                     : aiDeleteMode
                     ? showingSuggestions
                       ? 'AI suggested deletes'
@@ -734,7 +874,7 @@ export default function MailDashboard() {
                         m={m}
                         onClick={() => setSelectedId(m.id)}
                         selected={selectedId === m.id}
-                        selectMode={aiDeleteMode}
+                        selectMode={aiDeleteMode || unsubscribeMode}
                         selectedForDelete={selectedForDelete.has(m.id)}
                         onToggleSelect={() => toggleSelected(m.id)}
                       />
@@ -1334,6 +1474,7 @@ function SidebarContent({
   onLeftItemClick,
   onShowOtps,
   onShowAiDelete,
+  onShowUnsubscribe,
   categories,
   onAddCategory,
   onRemoveCategory,
@@ -1347,6 +1488,7 @@ function SidebarContent({
   onLeftItemClick: (key: string) => void
   onShowOtps: () => void
   onShowAiDelete: () => void
+  onShowUnsubscribe: () => void
   categories: Array<{ _id: string; name: string }>
   onAddCategory: (name: string) => Promise<void> | void
   onRemoveCategory: (id: string) => Promise<void> | void
@@ -1401,6 +1543,16 @@ function SidebarContent({
             <span className="inline-flex items-center gap-3">
               <Trash2 className="size-4 text-white" />
               <span>AI delete</span>
+            </span>
+            <span className="text-[11px] text-neutral-500">AI</span>
+          </button>
+          <button
+            className="group w-full inline-flex items-center justify-between py-2 text-sm hover:bg-neutral-900/30 transition-colors"
+            onClick={onShowUnsubscribe}
+          >
+            <span className="inline-flex items-center gap-3">
+              <Trash2 className="size-4 text-white" />
+              <span>Smart unsubscribe</span>
             </span>
             <span className="text-[11px] text-neutral-500">AI</span>
           </button>
@@ -1759,12 +1911,23 @@ function ComposeModal({
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
+    // 1) Load from localStorage cache first for instant suggestions
+    try {
+      const raw = localStorage.getItem('invoxus_contacts_cache_v1')
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        if (Array.isArray(parsed) && parsed.length) setSuggestions(parsed)
+      }
+    } catch {}
+    // 2) Refresh contacts in the background
     ;(async () => {
       try {
         const r = await fetch(`${API_BASE}/api/gmail/contacts?limit=600`, { credentials: 'include' })
         if (r.ok) {
           const j = await r.json()
-          setSuggestions((j.contacts || []).map((c: any) => ({ name: c.name, email: c.email })))
+          const list = (j.contacts || []).map((c: any) => ({ name: c.name, email: c.email }))
+          setSuggestions(list)
+          try { localStorage.setItem('invoxus_contacts_cache_v1', JSON.stringify(list)) } catch {}
           return
         }
         // Fallback: build from recent messages
@@ -1788,16 +1951,22 @@ function ComposeModal({
             }
           }
         }
-        setSuggestions(Array.from(set.values()).slice(0, 500))
+        const list = Array.from(set.values()).slice(0, 500)
+        setSuggestions(list)
+        try { localStorage.setItem('invoxus_contacts_cache_v1', JSON.stringify(list)) } catch {}
       } catch {}
     })()
   }, [])
 
+  const preprocessed = useMemo(() => {
+    return suggestions.map((c) => ({ name: c.name, email: c.email, ln: c.name.toLowerCase(), le: c.email.toLowerCase() })) as Array<{ name: string; email: string; ln: string; le: string }>
+  }, [suggestions])
+
   const filtered = useMemo(() => {
     const q = to.trim().toLowerCase()
     if (!q) return []
-    return suggestions.filter((c) => c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q)).slice(0, 6)
-  }, [to, suggestions])
+    return preprocessed.filter((c) => c.ln.includes(q) || c.le.includes(q)).slice(0, 10)
+  }, [to, preprocessed])
 
   async function handlePickFiles(ev: React.ChangeEvent<HTMLInputElement>) {
     const files = ev.target.files

@@ -5,6 +5,7 @@ const { htmlToText } = require('html-to-text');
 
 const router = express.Router();
 const mongoose = require('mongoose');
+const Unsubscribe = require('../models/Unsubscribe');
 
 // Simple Category and MailTag models (stored in MongoDB)
 const CategorySchema = new mongoose.Schema(
@@ -73,6 +74,41 @@ function extractBody(payload) {
     }
   }
   return { bodyHtml, bodyText };
+}
+
+// Parse List-Unsubscribe header into actionable links (mailto or http/https)
+function parseListUnsubscribeHeader(value = '') {
+  if (!value) return [];
+  // Header can contain multiple comma-separated entries, often wrapped in <>
+  const parts = String(value)
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const items = [];
+  for (const p of parts) {
+    const inner = p.replace(/^<|>$/g, '').trim();
+    if (!inner) continue;
+    try {
+      if (inner.toLowerCase().startsWith('mailto:')) {
+        const url = new URL(inner);
+        const address = url.pathname;
+        const subject = url.searchParams.get('subject') || 'unsubscribe';
+        const body = url.searchParams.get('body') || 'unsubscribe';
+        items.push({ type: 'mailto', address, subject, body });
+      } else if (inner.toLowerCase().startsWith('http://') || inner.toLowerCase().startsWith('https://')) {
+        items.push({ type: 'http', url: inner });
+      }
+    } catch {
+      // ignore malformed entries
+    }
+  }
+  return items;
+}
+
+// Detect sender email from a From header value
+function extractSenderEmail(fromHeader = '') {
+  const match = String(fromHeader).match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+  return match ? match[0].toLowerCase() : '';
 }
 
 router.get('/messages', async (req, res) => {
@@ -225,6 +261,7 @@ router.get('/messages/suggest-deletions', async (req, res) => {
     const q = typeof req.query.q === 'string' ? req.query.q : undefined;
     const limitParam = String(req.query.limit || '200');
     const maxCount = Math.max(1, Math.min(1000, parseInt(limitParam) || 200));
+    const strictMode = ['1', 'true', 'yes'].includes(String(req.query.strict || '1').toLowerCase());
 
     // Fetch a window of messages (metadata)
     let remaining = maxCount;
@@ -245,7 +282,7 @@ router.get('/messages/suggest-deletions', async (req, res) => {
           userId: 'me',
           id: m.id,
           format: 'metadata',
-          metadataHeaders: ['Subject', 'From', 'Date'],
+          metadataHeaders: ['Subject', 'From', 'Date', 'List-Unsubscribe', 'List-Unsubscribe-Post', 'To', 'Cc'],
         });
         const headers = Object.fromEntries((data.payload?.headers || []).map((h) => [h.name, h.value]));
         const item = {
@@ -256,37 +293,57 @@ router.get('/messages/suggest-deletions', async (req, res) => {
           date: headers['Date'] || '',
           snippet: data.snippet || '',
           labelIds: data.labelIds || [],
+          listUnsub: headers['List-Unsubscribe'] || headers['List-unsubscribe'] || '',
         };
         return item;
       })
     );
 
-    // Apply simple heuristics as baseline
-    const patterns = [
+    // Apply conservative heuristics as baseline
+    const includePatterns = [
       /unsubscribe/i,
       /newsletter/i,
       /promotion|promo|deal|sale/i,
       /no[-\s]?reply|donotreply|do[-\s]?not[-\s]?reply/i,
-      /notification/i,
       /digest/i,
+    ];
+    const protectPatterns = [
+      /invoice|receipt|payment|paid|billing|bill|statement|salary|payroll|payout|refund|wire|transfer|bank|account|upi|gst|tax|pan/i,
+      /order\b|tracking|shipment|shipping|delivery|itinerary|reservation|booking|ticket/i,
+      /otp|one[-\s]?time|verification|2fa|two[-\s]?factor|security\s*code|passcode|login\s*code/i,
+      /confirm|confirmation|approved|accepted|deadline|due|overdue|expires?/i,
     ];
     let baseline = details
       .map((d) => {
         const hay = `${d.subject}\n${d.from}\n${d.snippet}`;
-        const matched = patterns.find((p) => p.test(hay));
+        const hasListUnsub = !!d.listUnsub;
+        const includeHit = includePatterns.find((p) => p.test(hay));
         const isSocialOrPromo = Array.isArray(d.labelIds) && (d.labelIds.includes('CATEGORY_PROMOTIONS') || d.labelIds.includes('CATEGORY_SOCIAL'));
-        const score = (matched ? 1 : 0) + (isSocialOrPromo ? 1 : 0);
+        const looksReply = /^\s*(re:|fwd:)/i.test(d.subject || '');
+        const protectedHit = protectPatterns.find((p) => p.test(hay));
+        let score = 0;
+        // Conservative: require list-unsubscribe OR clear include pattern or promotions/social label
+        if (hasListUnsub) score += 2;
+        if (includeHit) score += 1;
+        if (isSocialOrPromo) score += 1;
+        // Penalize if protected keywords or reply/forward
+        if (protectedHit) score -= 3;
+        if (looksReply) score -= 1;
         let reason = '';
-        if (matched) reason = `Matched pattern: ${matched}`;
+        if (hasListUnsub) reason = 'Has List-Unsubscribe header';
+        if (includeHit) reason = reason ? `${reason}; ${includeHit}` : `Matched pattern: ${includeHit}`;
         if (isSocialOrPromo) reason = reason ? `${reason}; Promotions/Social` : 'Promotions/Social';
+        if (protectedHit && strictMode) reason = reason ? `${reason}; Protected: ${protectedHit}` : `Protected: ${protectedHit}`;
         return { ...d, reason, score };
       })
-      .filter((d) => d.score >= 1)
+      .filter((d) => d.score >= (strictMode ? 2 : 1))
       .slice(0, 300);
 
     // If explicitly requested via ?ai=1, refine with AI classifier; default is FAST heuristics only
     const groqApiKey = process.env.GROQ_API_KEY;
-    const useAI = ['1', 'true', 'yes'].includes(String(req.query.ai || '0').toLowerCase());
+    // Enable AI refinement by default when GROQ key is available; allow opting out via ai=0
+    const aiParam = String(req.query.ai || (groqApiKey ? '1' : '0')).toLowerCase();
+    const useAI = groqApiKey && ['1', 'true', 'yes'].includes(aiParam);
     if (groqApiKey && useAI && baseline.length) {
       try {
         const groq = new Groq({ apiKey: groqApiKey });
@@ -300,7 +357,9 @@ router.get('/messages/suggest-deletions', async (req, res) => {
               const i = idx++;
               const d = toClassify[i];
               try {
-                const prompt = `You are an email triage assistant. Decide if this message is low-value (promotions, newsletters, social digests, generic notifications, marketing blasts) and safe to move to Trash. Avoid deleting personal emails, receipts, invoices, OTPs, confirmations, or threads with ongoing conversation.
+                const prompt = `You are an email triage assistant. Decide if this message is low-value (promotions, newsletters, social digests, generic notifications, marketing blasts) and safe to move to Trash.
+
+STRICTLY DO NOT delete anything related to: payments, invoices, receipts, bills, statements, banking, payroll, refunds, taxes, OTP/verification/security codes, orders, shipping/tracking, bookings/tickets/itineraries/reservations, confirmations, deadlines, account access, support tickets.
 
 Return STRICT JSON: { "delete": boolean, "reason": string }
 
@@ -343,6 +402,187 @@ Subject: ${d.subject}\nFrom: ${d.from}\nSnippet: ${d.snippet}\nLabels: ${(d.labe
   } catch (err) {
     console.error('Suggest deletions error:', err?.response?.data || err);
     res.status(500).json({ error: 'Failed to suggest deletions' });
+  }
+});
+
+// Unsubscribe suggestions: scan recent inbox for List-Unsubscribe headers
+router.get('/unsubscribe/suggestions', async (req, res) => {
+  try {
+    const tokens = req.session && req.session.tokens;
+    if (!tokens) return res.status(401).json({ error: 'Not authenticated' });
+    const user = req.session && req.session.userProfile;
+    if (!user) return res.status(401).json({ error: 'Not authenticated' });
+
+    const oauth2Client = createOAuthClientFromSession(tokens);
+    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+
+    const limitParam = String(req.query.limit || '200');
+    const maxCount = Math.max(1, Math.min(600, parseInt(limitParam) || 200));
+
+    let remaining = maxCount;
+    let pageToken = undefined;
+    const messagesBasic = [];
+    do {
+      const pageSize = Math.min(200, Number.isFinite(remaining) ? remaining : 200);
+      const page = await gmail.users.messages.list({ userId: 'me', labelIds: ['INBOX'], maxResults: pageSize, pageToken });
+      const batch = page.data.messages || [];
+      messagesBasic.push(...batch);
+      pageToken = page.data.nextPageToken;
+      if (Number.isFinite(remaining)) remaining -= batch.length;
+    } while (pageToken && (!Number.isFinite(remaining) || remaining > 0));
+
+    // Fetch headers including List-Unsubscribe
+    const details = await Promise.all(
+      messagesBasic.map(async (m) => {
+        const { data } = await gmail.users.messages.get({
+          userId: 'me',
+          id: m.id,
+          format: 'metadata',
+          metadataHeaders: ['Subject', 'From', 'Date', 'List-Unsubscribe', 'List-Unsubscribe-Post'],
+        });
+        const headers = parseHeaders(data.payload?.headers || []);
+        const lu = headers['List-Unsubscribe'] || headers['List-unsubscribe'] || '';
+        const lup = headers['List-Unsubscribe-Post'] || headers['List-unsubscribe-post'] || '';
+        const options = parseListUnsubscribeHeader(lu);
+        if (!options.length) return null;
+        const hasOneClick = /one-click/i.test(String(lup || ''));
+        return {
+          id: m.id,
+          threadId: data.threadId,
+          subject: headers['Subject'] || '',
+          from: headers['From'] || '',
+          date: headers['Date'] || '',
+          senderEmail: extractSenderEmail(headers['From'] || ''),
+          hasOneClick,
+          methods: options,
+        };
+      })
+    );
+
+    // Suppress already unsubscribed messageIds and senders for this user
+    const prior = await Unsubscribe.find({ userId: user.id }).select('messageId senderEmail').lean();
+    const suppressedMessageIds = new Set(prior.map((r) => r.messageId));
+    const suppressedSenders = new Set(prior.map((r) => (r.senderEmail || '').toLowerCase()).filter(Boolean));
+
+    // Deduplicate by senderEmail + method target where possible to reduce noise
+    const unique = [];
+    const seen = new Set();
+    for (const d of details) {
+      if (!d) continue;
+      if (suppressedMessageIds.has(d.id)) continue;
+      if (d.senderEmail && suppressedSenders.has(String(d.senderEmail).toLowerCase())) continue;
+      const key = `${d.senderEmail}|${d.methods.map((o) => (o.type === 'http' ? o.url : o.address)).join(',')}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      unique.push(d);
+      if (unique.length >= maxCount) break;
+    }
+
+    res.json({ suggestions: unique });
+  } catch (err) {
+    console.error('Unsubscribe suggestions error:', err?.response?.data || err);
+    res.status(500).json({ error: 'Failed to fetch unsubscribe suggestions' });
+  }
+});
+
+// Execute unsubscribe actions for selected messages (confirms required)
+router.post('/unsubscribe/execute', async (req, res) => {
+  try {
+    const tokens = req.session && req.session.tokens;
+    if (!tokens) return res.status(401).json({ error: 'Not authenticated' });
+    const user = req.session && req.session.userProfile;
+    if (!user) return res.status(401).json({ error: 'Not authenticated' });
+    const { ids = [], confirm } = req.body || {};
+    if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ error: 'Missing ids' });
+    if (!confirm) return res.status(400).json({ error: 'Confirmation required' });
+
+    const oauth2Client = createOAuthClientFromSession(tokens);
+    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+
+    let success = 0;
+    const failed = [];
+    const results = [];
+
+    for (const id of ids) {
+      try {
+        const { data } = await gmail.users.messages.get({
+          userId: 'me',
+          id,
+          format: 'metadata',
+          metadataHeaders: ['Subject', 'From', 'Date', 'List-Unsubscribe', 'List-Unsubscribe-Post'],
+        });
+        const headers = parseHeaders(data.payload?.headers || []);
+        const lu = headers['List-Unsubscribe'] || headers['List-unsubscribe'] || '';
+        const lup = headers['List-Unsubscribe-Post'] || headers['List-unsubscribe-post'] || '';
+        const options = parseListUnsubscribeHeader(lu);
+        if (!options.length) throw new Error('No unsubscribe options');
+
+        const sender = extractSenderEmail(headers['From'] || '');
+        const oneClick = /one-click/i.test(String(lup || ''));
+
+        let performed = false;
+        // Prefer One-Click HTTP if available
+        if (!performed) {
+          const httpOpt = options.find((o) => o.type === 'http');
+          if (httpOpt) {
+            try {
+              if (oneClick) {
+                // RFC8058 one-click: POST body 'List-Unsubscribe=One-Click'
+                const r = await fetch(httpOpt.url, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                  body: 'List-Unsubscribe=One-Click',
+                });
+                performed = r.ok || (r.status >= 200 && r.status < 400);
+              } else {
+                const r = await fetch(httpOpt.url, { method: 'GET' });
+                performed = r.ok || (r.status >= 200 && r.status < 400);
+              }
+            } catch {
+              // fall back to mailto
+            }
+          }
+        }
+
+        // Fallback to mailto unsubscribe
+        if (!performed) {
+          const mailtoOpt = options.find((o) => o.type === 'mailto');
+          if (mailtoOpt) {
+            const to = mailtoOpt.address;
+            const subject = mailtoOpt.subject || 'unsubscribe';
+            const body = mailtoOpt.body || 'unsubscribe';
+            const raw = [
+              `To: ${to}`,
+              `Subject: ${subject}`,
+              'Content-Type: text/plain; charset="UTF-8"',
+              '',
+              body,
+            ].join('\r\n');
+            const encoded = Buffer.from(raw).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+            await gmail.users.messages.send({ userId: 'me', requestBody: { raw: encoded } });
+            performed = true;
+          }
+        }
+
+        if (performed) {
+          success += 1;
+          results.push({ id, sender, ok: true });
+          try {
+            await Unsubscribe.create({ userId: user.id, messageId: id, senderEmail: sender });
+          } catch {}
+        } else {
+          failed.push(id);
+          results.push({ id, sender, ok: false });
+        }
+      } catch (e) {
+        failed.push(id);
+      }
+    }
+
+    res.json({ success, failed, results });
+  } catch (err) {
+    console.error('Unsubscribe execute error:', err?.response?.data || err);
+    res.status(500).json({ error: 'Failed to execute unsubscribe' });
   }
 });
 

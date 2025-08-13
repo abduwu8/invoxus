@@ -1,4 +1,7 @@
 import GradientBackground from '../components/GradientBackground'
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+import { FcGoogle } from 'react-icons/fc'
 import { PointerHighlight } from '../components/ui/pointer-highlight'
 import { FlipWords } from '../components/flipwords'
 import { StickyBanner } from '../components/ui/sticky-banner'
@@ -126,14 +129,26 @@ export default function Hero({ onLoggedIn }: Props) {
         </p>
 
         {/* Sign in CTA */}
-        <div className="mt-8 flex items-center justify-center">
+        <div className="mt-8 flex items-center justify-center gap-3">
           <button
             onClick={startGoogleAuth}
             className="inline-flex items-center gap-2 rounded-lg border border-neutral-800 bg-neutral-950/60 hover:bg-neutral-900 px-4 py-2 text-sm text-neutral-100"
           >
-            <svg className="size-4" viewBox="0 0 24 24" aria-hidden="true"><path fill="#EA4335" d="M12 10.2v3.6h5.1c-.2 1.2-1.3 3.4-5.1 3.4-3.1 0-5.7-2.6-5.7-5.8S8.9 5.6 12 5.6c1.8 0 3 .8 3.7 1.5l2.5-2.4C16.9 3 14.7 2 12 2 6.9 2 2.8 6.1 2.8 11.2S6.9 20.4 12 20.4c7 0 8.7-4.9 8.7-7.1 0-.5 0-.9-.1-1.3H12z"/><path fill="#34A853" d="M3.9 7.3l3 2.2c.8-2.4 3-4 5.4-4 1.8 0 3 .8 3.7 1.5l2.5-2.4C16.9 3 14.7 2 12 2 8.1 2 4.8 4.2 3.9 7.3z"/><path fill="#FBBC05" d="M12 22c2.7 0 4.9-.9 6.6-2.4l-3-2.3c-.8.5-1.9.9-3.6.9-2.7 0-4.9-1.8-5.6-4.2l-3 .2C4.5 18.8 7.9 22 12 22z"/><path fill="#4285F4" d="M20.7 13.3c.2-.5.3-1 .3-1.7 0-.6-.1-1.2-.2-1.7H12v3.6h5.1c-.2 1.2-1.3 3.4-5.1 3.4-2.2 0-4.1-1.1-5-2.7l-3 .2C5 18.3 8.2 22 12 22c4.6 0 7.9-3 8.7-7.1z"/></svg>
+            <FcGoogle className="h-5 w-5" />
             Sign in with Google
           </button>
+          <a
+            href={(import.meta.env.VITE_GITHUB_REPO_URL as string | undefined) || 'https://github.com/abduwu8/invoxus'}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 rounded-lg border border-neutral-800 bg-neutral-950/40 hover:bg-neutral-900 px-4 py-2 text-sm text-neutral-100"
+            aria-label="Star the repository on GitHub"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
+              <path d="M12 .5a11.5 11.5 0 0 0-3.64 22.42c.58.11.79-.25.79-.56v-2c-3.22.7-3.9-1.38-3.9-1.38-.53-1.35-1.3-1.71-1.3-1.71-1.06-.72.08-.71.08-.71 1.17.08 1.78 1.2 1.78 1.2 1.04 1.78 2.72 1.27 3.39.97.11-.76.41-1.27.74-1.56-2.57-.29-5.28-1.29-5.28-5.73 0-1.27.46-2.31 1.2-3.13-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.2a10.97 10.97 0 0 1 5.78 0c2.2-1.51 3.17-1.2 3.17-1.2.63 1.59.23 2.76.11 3.05.75.82 1.2 1.86 1.2 3.13 0 4.45-2.71 5.44-5.29 5.72.42.36.79 1.06.79 2.13v3.16c0 .31.21.68.8.56A11.5 11.5 0 0 0 12 .5Z"/>
+            </svg>
+            Star on GitHub
+          </a>
         </div>
       </section>
 
