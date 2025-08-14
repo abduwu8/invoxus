@@ -1662,6 +1662,9 @@ function ChatModal({
           </button>
         </div>
         <div className="p-4 flex flex-col gap-3 flex-1 overflow-hidden">
+          <div className="rounded-md border border-yellow-800/50 bg-yellow-900/20 text-yellow-200 text-xs px-3 py-2">
+            Disclaimer: AI responses may be inaccurate or incomplete. It can give wrong answers and might not be able to go through all emails.
+          </div>
           {showExamples ? (
             <>
               <div className="grid place-items-center py-4">

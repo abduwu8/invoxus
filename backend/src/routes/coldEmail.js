@@ -50,7 +50,7 @@ Where "reason" is a concise 6–12 word summary of the angle used.`;
 
     // Call Groq without unsupported fetch signal; enforce timeout by Promise.race
     const request = groq.chat.completions.create({
-      model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
+      model: process.env.GROQ_MODEL || 'openai/gpt-oss-20b',
       messages: [
         { role: 'system', content: 'You are a helpful assistant. Always return STRICT JSON.' },
         { role: 'user', content: prompt },

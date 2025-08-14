@@ -869,7 +869,7 @@ ${plain.slice(0, 8000)}
 Return ONLY JSON.`;
 
     const completion = await groq.chat.completions.create({
-      model: 'openai/gpt-oss-120b',
+      model: 'openai/gpt-oss-20b',
       messages: [
         { role: 'system', content: 'Return strict JSON only.' },
         { role: 'user', content: prompt },
@@ -1076,7 +1076,7 @@ ${plain.slice(0, 8000)}
 JSON only.`;
 
     const completion = await groq.chat.completions.create({
-      model: 'openai/gpt-oss-120b',
+      model: 'openai/gpt-oss-20b',
       messages: [
         { role: 'system', content: 'Return strict JSON only.' },
         { role: 'user', content: prompt },

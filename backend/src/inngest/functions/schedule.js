@@ -28,7 +28,7 @@ const scheduleFunction = inngest.createFunction(
 - body: string (fallback to provided body)
 User intent: ${prompt}`;
       const out = await groq.chat.completions.create({
-        model: 'llama-3.1-8b-instant',
+        model: 'openai/gpt-oss-20b',
         messages: [
           { role: 'system', content: 'Return strict JSON only.' },
           { role: 'user', content: promptText },
