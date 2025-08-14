@@ -101,7 +101,7 @@ export default function Hero({ onLoggedIn }: Props) {
       <StickyBanner className="bg-gradient-to-b from-blue-500 to-blue-600">
         <p className="mx-0 max-w-[90%] text-white drop-shadow-md">
           We value your privacy. Read our{' '}
-          <a href="#terms" className="transition duration-200 hover:underline">
+          <a href="https://invoxus.in/privacy" className="transition duration-200 hover:underline">
             Privacy Policy & Terms
           </a>
           .
