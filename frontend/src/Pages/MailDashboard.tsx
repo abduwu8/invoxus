@@ -1597,6 +1597,16 @@ function SidebarContent({
             <span className="text-[11px] text-neutral-500">AI</span>
           </button>
         </div>
+        <div className="pt-1 pb-2 text-center">
+          <a
+            href="https://invoxus.in/privacy"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[11px] text-neutral-500 hover:text-neutral-300 underline decoration-neutral-700 hover:decoration-neutral-400"
+          >
+            Privacy Policy
+          </a>
+        </div>
       </div>
     </div>
   )
