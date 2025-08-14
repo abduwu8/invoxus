@@ -100,9 +100,9 @@ export default function Hero({ onLoggedIn }: Props) {
       {/* Top sticky banner */}
       <StickyBanner className="bg-gradient-to-b from-blue-500 to-blue-600">
         <p className="mx-0 max-w-[90%] text-white drop-shadow-md">
-          Invoxus is still in development. Read{' '}
+          We value your privacy. Read our{' '}
           <a href="#terms" className="transition duration-200 hover:underline">
-            Terms and Conditions
+            Privacy Policy & Terms
           </a>
           .
         </p>
