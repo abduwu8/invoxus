@@ -27,10 +27,6 @@ Key features
 - OTP hub for quick code retrieval
 - Compose, reply, forward with attachments
 
-Roadmap
-- Microsoft 365/Outlook and IMAP support
-- Daily/weekly digest of priorities and deadlines
-- Follow‑up manager and meeting assistant
 
 Get started
 - Open the app, click “Sign in with Google,” and you’re in. The left sidebar has Invoxus Lens (OTPs, AI delete, Smart Unsubscribe). Draft replies and actions appear right in your flow.
