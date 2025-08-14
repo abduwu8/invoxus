@@ -4,7 +4,6 @@ import GradientBackground from '../components/GradientBackground'
 import { FcGoogle } from 'react-icons/fc'
 import { PointerHighlight } from '../components/ui/pointer-highlight'
 import { FlipWords } from '../components/flipwords'
-import { StickyBanner } from '../components/ui/sticky-banner'
 import { useEffect, useMemo, useState } from 'react'
 
 const API_BASE = import.meta.env.PROD ? '' : ((import.meta.env.VITE_API_BASE as string) || 'http://localhost:4000')
@@ -98,14 +97,7 @@ export default function Hero({ onLoggedIn }: Props) {
   return (
     <GradientBackground>
       {/* Top sticky banner */}
-      <StickyBanner className="bg-gradient-to-b from-blue-500 to-blue-600">
-        <p className="mx-0 max-w-[90%] text-white drop-shadow-md">
-          We value your privacy.
-          <a href="https://invoxus.in/privacy" className="ml-1 underline underline-offset-2">
-            Privacy Policy
-          </a>
-        </p>
-      </StickyBanner>
+      {/* Removed in-app banner to avoid duplicate; base index.html contains a static privacy banner for reviewers */}
       {/* Hero headline */}
       <section className="mx-auto max-w-5xl px-6 pt-16 pb-10 text-center">
         <h1 className="font-bold tracking-tight text-neutral-100 text-4xl md:text-6xl leading-tight">
