@@ -1,3 +1,63 @@
+function NewFeatureModal({ onClose, onTryCold }: { onClose: () => void; onTryCold: () => void }) {
+  return (
+    <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-white rounded-xl shadow-2xl overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                <Sparkles className="w-4 h-4 text-blue-600" />
+              </div>
+              <div>
+                <div className="text-sm font-semibold text-gray-900">New: Smarter Cold Emails</div>
+                <div className="text-xs text-gray-500">More precise. More customizable. More you.</div>
+              </div>
+            </div>
+            <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors">
+              <X className="w-4 h-4 text-gray-500" />
+            </button>
+          </div>
+        </div>
+        <div className="px-6 py-5">
+          <ul className="space-y-3 text-sm text-gray-600">
+            <li className="flex items-start gap-2">
+              <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+              <span>AI now writes longer, role‑aware drafts that reflect your skills, resume and tone.</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+              <span>New fields: job title, skills, achievements, fit, availability, location and more.</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+              <span>Suggestion engine: type "software developer" and get tailored points instantly.</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+              <span>Playful tone option for fun intros (tl;dr style) while staying professional.</span>
+            </li>
+          </ul>
+          <div className="mt-5 grid grid-cols-1 gap-3">
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+              <div className="text-xs font-medium text-gray-500 mb-2">Precision</div>
+              <div className="text-sm text-gray-700">Tone + length controls with strict enforcement for consistent results.</div>
+            </div>
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+              <div className="text-xs font-medium text-gray-500 mb-2">Personalization</div>
+              <div className="text-sm text-gray-700">Grounded in your resume highlights and portfolio links.</div>
+            </div>
+          </div>
+        </div>
+        <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-end gap-3 bg-gray-50">
+          <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">Later</button>
+          <button onClick={onTryCold} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
+            Try new Cold Email
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Star, Reply as LucideReply, Trash2, Wand2, Send, X, Plus, Inbox, MessageSquare, Bot, Sparkles, CheckSquare, KeyRound, LogOut, Menu, ArrowLeft, ThumbsUp, ThumbsDown, Paperclip } from 'lucide-react'
 import { PlaceholdersAndVanishInput } from '../components/ui/reveal'
@@ -72,8 +132,20 @@ export default function MailDashboard() {
   const [chatModalOpen, setChatModalOpen] = useState(false)
   const [chatPendingSend, setChatPendingSend] = useState<null | { toEmail: string; subject: string; body: string }>(null)
   const [coldOpen, setColdOpen] = useState(false)
+  const [showFeatureModal, setShowFeatureModal] = useState(false)
   const [search, setSearch] = useState('')
   const [showingSuggestions, setShowingSuggestions] = useState(false)
+  // Show once per session after login: New feature modal
+  useEffect(() => {
+    try {
+      const key = 'feature_cold_v2_seen_session_2025_09'
+      // Wait until profile is loaded (user logged in)
+      if (profile && !sessionStorage.getItem(key)) {
+        setShowFeatureModal(true)
+        sessionStorage.setItem(key, '1')
+      }
+    } catch {}
+  }, [profile])
   const [showingOtps, setShowingOtps] = useState(false)
   const [selectedForDelete, setSelectedForDelete] = useState<Set<string>>(new Set())
   const [aiDeleteMode, setAiDeleteMode] = useState(false)
@@ -1184,7 +1256,24 @@ export default function MailDashboard() {
       {coldOpen ? (
         <ComposeColdEmailModal
           onClose={() => setColdOpen(false)}
-          onGenerate={async (payload: { to: string; keywords: string; role?: string; company?: string }) => {
+          onGenerate={async (payload: {
+            to: string;
+            skills: string;
+            role?: string;
+            company?: string;
+            industry?: string;
+            jobTitle?: string;
+            achievements?: string;
+            portfolioLinks?: string;
+            fitSummary?: string;
+            ctaPreference?: string;
+            tone?: 'professional' | 'friendly' | 'direct' | 'curious' | 'playful';
+            desiredLength?: 'short' | 'medium' | 'long';
+            resumeText?: string;
+            availability?: string;
+            location?: string;
+            lowCost?: boolean;
+          }) => {
             const r = await fetch(`${API_BASE}/api/cold-email/generate`, {
               method: 'POST',
               credentials: 'include',
@@ -1203,6 +1292,15 @@ export default function MailDashboard() {
             })
             if (!r.ok) throw new Error('Failed to send')
             return true
+          }}
+        />
+      ) : null}
+      {showFeatureModal ? (
+        <NewFeatureModal
+          onClose={() => setShowFeatureModal(false)}
+          onTryCold={() => {
+            setShowFeatureModal(false)
+            setColdOpen(true)
           }}
         />
       ) : null}
@@ -2257,26 +2355,104 @@ function ComposeColdEmailModal({
   onSend,
 }: {
   onClose: () => void
-  onGenerate: (p: { to: string; keywords: string; role?: string; company?: string }) => Promise<{ to: string; subject: string; body: string; reason?: string }>
+  onGenerate: (
+    p: {
+      to: string
+      skills: string
+      role?: string
+      company?: string
+      industry?: string
+      jobTitle?: string
+      achievements?: string
+      portfolioLinks?: string
+      fitSummary?: string
+      ctaPreference?: string
+      tone?: 'professional' | 'friendly' | 'direct' | 'curious' | 'playful'
+      desiredLength?: 'short' | 'medium' | 'long'
+      resumeText?: string
+      availability?: string
+      location?: string
+      lowCost?: boolean
+    }
+  ) => Promise<{ to: string; subject: string; body: string; reason?: string }>
   onSend: (p: { to: string; subject: string; body: string }) => Promise<boolean>
 }) {
   const [to, setTo] = useState('')
   const [role, setRole] = useState('HR')
   const [company, setCompany] = useState('')
-  const [keywords, setKeywords] = useState('')
+  const [skills, setSkills] = useState('')
+  const [industry, setIndustry] = useState('')
+  const [jobTitle, setJobTitle] = useState('')
+  const [achievements, setAchievements] = useState('')
+  const [portfolioLinks, setPortfolioLinks] = useState('')
+  const [fitSummary, setFitSummary] = useState('')
+  const [ctaPreference, setCtaPreference] = useState('')
+  const [tone, setTone] = useState<'professional' | 'friendly' | 'direct' | 'curious' | 'playful'>('professional')
+  const [desiredLength, setDesiredLength] = useState<'short' | 'medium' | 'long'>('long')
+  const [resumeText, setResumeText] = useState('')
+  const [resumeName, setResumeName] = useState<string | null>(null)
+  const [availability, setAvailability] = useState('')
+  const [location, setLocation] = useState('')
+  const [lowCost, setLowCost] = useState(false)
   const [subject, setSubject] = useState('')
   const [body, setBody] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [reason, setReason] = useState<string | null>(null)
+  const [suggestionNote, setSuggestionNote] = useState<string | null>(null)
   const previewRef = useRef<HTMLDivElement | null>(null)
+
+  // Fetch AI-driven suggestions when inputs change; only fill empty fields
+  useEffect(() => {
+    const controller = new AbortController()
+    const timer = setTimeout(async () => {
+      const keyCombined = `${String(industry || '').trim()} ${String(jobTitle || '').trim()} ${String(skills || '').trim()}`.trim()
+      if (!keyCombined || keyCombined.length < 2) return
+      try {
+        const r = await fetch(`${API_BASE}/api/cold-email/suggest`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ industry, role, company, resumeText, skills, jobTitle, portfolioLinks }),
+          signal: controller.signal,
+        })
+        if (!r.ok) return
+        const s: {
+          skills?: string
+          achievements?: string
+          fitSummary?: string
+          portfolioLinks?: string
+          ctaPreference?: string
+          tone?: 'professional' | 'friendly' | 'direct' | 'curious' | 'playful'
+          desiredLength?: 'short' | 'medium' | 'long'
+          availability?: string
+          location?: string
+        } = await r.json()
+        let applied = false
+        if (s.skills && !skills.trim()) { setSkills(s.skills); applied = true }
+        if (s.achievements && !achievements.trim()) { setAchievements(s.achievements); applied = true }
+        if (s.fitSummary && !fitSummary.trim()) { setFitSummary(s.fitSummary); applied = true }
+        if (s.portfolioLinks && !portfolioLinks.trim()) { setPortfolioLinks(s.portfolioLinks); applied = true }
+        if (s.ctaPreference && !ctaPreference.trim()) { setCtaPreference(s.ctaPreference); applied = true }
+        if (s.availability && !availability.trim()) { setAvailability(s.availability); applied = true }
+        if (s.location && !location.trim()) { setLocation(s.location); applied = true }
+        if (s.tone && tone === 'professional') { setTone(s.tone) }
+        if (s.desiredLength && desiredLength === 'long') { setDesiredLength(s.desiredLength) }
+        if (applied) {
+          setSuggestionNote('AI suggestions applied')
+          setTimeout(() => setSuggestionNote(null), 2500)
+        }
+      } catch {}
+    }, 350)
+    return () => { controller.abort(); clearTimeout(timer) }
+  }, [industry, jobTitle, skills])
 
   const toInvalid = !!to && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)
   const wordCount = body ? body.trim().split(/\s+/).filter(Boolean).length : 0
   const previewReady = !!subject || !!body
   return (
     <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-stretch md:items-start justify-center">
-      <div className="mt-0 md:mt-10 w-full md:w-auto h-full md:h-auto md:max-w-3xl max-w-[100vw] rounded-none md:rounded-2xl border border-neutral-800 bg-neutral-950 shadow-xl overflow-hidden flex flex-col">
+      <div className="mt-0 md:mt-10 w-full md:w-auto h-full md:h-auto md:max-w-5xl lg:max-w-6xl max-w-[100vw] rounded-none md:rounded-2xl border border-neutral-800 bg-neutral-950 shadow-xl overflow-hidden flex flex-col">
         <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-800">
           <div className="flex items-center gap-2">
             <Sparkles className="size-4 text-violet-400" />
@@ -2313,8 +2489,97 @@ function ComposeColdEmailModal({
                 </div>
               </div>
               <div>
-                <label className="block text-xs text-neutral-500 mb-1">Keywords</label>
-                <textarea value={keywords} onChange={(e) => setKeywords(e.target.value)} className="min-h-[88px] w-full resize-y rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-neutral-700" placeholder="e.g. frontend developer, react, portfolio, experience" />
+                <label className="block text-xs text-neutral-500 mb-1">Industry</label>
+                <input value={industry} onChange={(e) => setIndustry(e.target.value)} className="w-full rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-neutral-700" placeholder="e.g. fintech, SaaS, e-commerce" />
+                {suggestionNote ? <div className="mt-1 text-[11px] text-violet-300">{suggestionNote}</div> : null}
+              </div>
+              <div>
+                <label className="block text-xs text-neutral-500 mb-1">Job title you’re targeting</label>
+                <input value={jobTitle} onChange={(e) => setJobTitle(e.target.value)} className="w-full rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-neutral-700" placeholder="e.g. Frontend Engineer" />
+              </div>
+              <div>
+                <label className="block text-xs text-neutral-500 mb-1">Key skills</label>
+                <textarea value={skills} onChange={(e) => setSkills(e.target.value)} className="min-h-[72px] w-full resize-y rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-neutral-700" placeholder="e.g. React, TypeScript, Node, Tailwind, testing" />
+              </div>
+              <div>
+                <label className="block text-xs text-neutral-500 mb-1">Notable achievements</label>
+                <textarea value={achievements} onChange={(e) => setAchievements(e.target.value)} className="min-h-[72px] w-full resize-y rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-neutral-700" placeholder="e.g. grew signups 22%, led redesign, shipped X feature" />
+              </div>
+              <div>
+                <label className="block text-xs text-neutral-500 mb-1">Portfolio / links</label>
+                <textarea value={portfolioLinks} onChange={(e) => setPortfolioLinks(e.target.value)} className="min-h-[56px] w-full resize-y rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-neutral-700" placeholder="e.g. website, GitHub, LinkedIn, case studies" />
+              </div>
+              <div>
+                <label className="block text-xs text-neutral-500 mb-1">Why you’re a fit (optional)</label>
+                <textarea value={fitSummary} onChange={(e) => setFitSummary(e.target.value)} className="min-h-[56px] w-full resize-y rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-neutral-700" placeholder="1–2 lines tailored to the company" />
+              </div>
+              <div>
+                <label className="block text-xs text-neutral-500 mb-1">Availability</label>
+                <input value={availability} onChange={(e) => setAvailability(e.target.value)} className="w-full rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-neutral-700" placeholder="e.g. immediate, 2 weeks notice" />
+              </div>
+              <div>
+                <label className="block text-xs text-neutral-500 mb-1">Location (optional)</label>
+                <input value={location} onChange={(e) => setLocation(e.target.value)} className="w-full rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-neutral-700" placeholder="e.g. Remote, Bengaluru" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-neutral-500 mb-1">CTA preference</label>
+                  <input value={ctaPreference} onChange={(e) => setCtaPreference(e.target.value)} className="w-full rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-neutral-700" placeholder="e.g. 10-min intro, quick reply, forward to owner" />
+                </div>
+                <div>
+                  <label className="block text-xs text-neutral-500 mb-1">Tone</label>
+                  <select value={tone} onChange={(e) => setTone(e.target.value as any)} className="w-full rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-neutral-700">
+                    <option value="professional">Professional</option>
+                    <option value="friendly">Friendly</option>
+                    <option value="direct">Direct</option>
+                    <option value="curious">Curious</option>
+                    <option value="playful">Playful (fun, tl;dr style)</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs text-neutral-500 mb-1">Desired length</label>
+                <select value={desiredLength} onChange={(e) => setDesiredLength(e.target.value as any)} className="w-full rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-neutral-700">
+                  <option value="short">Short</option>
+                  <option value="medium">Medium</option>
+                  <option value="long">Long</option>
+                </select>
+              </div>
+              <label className="flex items-center gap-2 text-xs text-neutral-300 select-none">
+                <input type="checkbox" checked={lowCost} onChange={(e) => setLowCost(e.target.checked)} className="accent-blue-600" />
+                Low cost mode (fewer tokens, faster)
+              </label>
+              <div>
+                <label className="block text-xs text-neutral-500 mb-1">Resume (optional)</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="file"
+                    accept=".txt,.md,.text"
+                    className="block w-full text-xs text-neutral-400 file:mr-3 file:rounded-md file:border file:border-neutral-800 file:bg-neutral-900 file:px-3 file:py-1.5 file:text-neutral-200 hover:file:bg-neutral-800"
+                    onChange={async (e) => {
+                      const f = e.target.files && e.target.files[0]
+                      if (!f) return
+                      setResumeName(f.name)
+                      if (f.type.startsWith('text') || /\.txt$|\.md$|\.text$/i.test(f.name)) {
+                        const txt = await f.text()
+                        setResumeText(txt.slice(0, 12000))
+                      } else {
+                        setResumeText('')
+                        import('sonner').then(({ toast }) => toast.message('Only plain text resumes are read for AI drafting right now.'))
+                      }
+                    }}
+                  />
+                </div>
+                {resumeName ? (
+                  <div className="mt-1 text-[11px] text-neutral-500">{resumeName}{resumeText ? ' • text extracted' : ' • not parsed'}</div>
+                ) : null}
+                <textarea
+                  value={resumeText}
+                  onChange={(e) => setResumeText(e.target.value)}
+                  placeholder="Or paste resume/profile highlights here..."
+                  className="mt-2 min-h-[100px] w-full resize-y rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-neutral-700"
+                />
+                <div className="mt-1 text-[11px] text-neutral-500">AI will use resume highlights to personalize the draft.</div>
               </div>
               {error ? <div className="text-xs text-red-400">{error}</div> : null}
               <div className="flex items-center gap-2 pt-1">
@@ -2325,7 +2590,24 @@ function ComposeColdEmailModal({
                     try {
                       setLoading(true)
                       setError(null)
-                      const d = await onGenerate({ to, keywords, role, company })
+                      const d = await onGenerate({
+                        to,
+                        skills,
+                        role,
+                        company,
+                        industry,
+                        jobTitle,
+                        achievements,
+                        portfolioLinks,
+                        fitSummary,
+                        ctaPreference,
+                        tone,
+                        desiredLength,
+                        resumeText,
+                        availability,
+                        location,
+                        lowCost,
+                      })
                       if (d.to && !to) setTo(d.to)
                       const nextSubject = d.subject || subject || ''
                       const nextBody = d.body || body || ''
