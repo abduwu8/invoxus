@@ -84,16 +84,16 @@ Availability: flexible
 Location: remote
 
 REQUIREMENTS:
-- EXACTLY 3 paragraphs, 200-260 words total
-- Paragraph 1: Start with an innovative, fun opener like "TL;DR: I'm the developer your team didn't know they needed" or "TL;DR: Ready to turn your tech stack into a powerhouse?" - be creative and memorable. Introduce yourself and the role.
-- Paragraph 2: Showcase your skills, achievements, and relevant experience. Include specific examples and metrics.
-- Paragraph 3: Creative call-to-action with personality. Use tech metaphors and show enthusiasm.
+- EXACTLY 3 paragraphs, 180-220 words total (be concise!)
+- Paragraph 1: Start with an innovative, fun opener like "TL;DR: I'm the developer your team didn't know they needed" or "TL;DR: Ready to turn your tech stack into a powerhouse?" - be creative and memorable. Introduce yourself and the role. Keep it brief and punchy.
+- Paragraph 2: Showcase your skills, achievements, and relevant experience. Include specific examples and metrics. Be direct and to the point.
+- Paragraph 3: Creative call-to-action with personality. Use tech metaphors and show enthusiasm. Keep it short and impactful.
 - Be innovative, use tech metaphors, show personality while staying professional. Make HR think "this person is creative and would bring fresh energy to our team". Use phrases like "code wizard", "bug slayer", "performance optimizer", or creative analogies
 
 CRITICAL: Return ONLY valid JSON, no other text, no code blocks, no explanations:
 {
   "subject": "Email subject (max 70 chars)",
-  "body": "Email body (3 paragraphs, 200-260 words)",
+  "body": "Email body (3 paragraphs, 180-220 words)",
   "reason": "Brief approach explanation"
 }`;
 
@@ -232,7 +232,6 @@ async function aiComposeStrict(groq, {
   model,
   role,
   company,
-  industry,
   jobTitle,
   skillsForPrompt,
   achievements,
@@ -246,7 +245,68 @@ async function aiComposeStrict(groq, {
   purpose = 'compose',
   opts = {}
 }) {
-  const composePrompt = `Write a professional job application email. Return ONLY valid JSON with these exact fields: {"subject","body","reason"}.
+  // Generate unique creative elements for variety
+  const creativeElements = {
+    tldrOpeners: [
+      "TL;DR: Your next hire just found you",
+      "TL;DR: Ready to level up your team?",
+      "TL;DR: Found the missing piece of your puzzle",
+      "TL;DR: Your inbox just got an upgrade",
+      "TL;DR: Time to meet your new team member",
+      "TL;DR: The developer you've been searching for",
+      "TL;DR: Ready to supercharge your projects?",
+      "TL;DR: Your tech stack is about to get better",
+      "TL;DR: The perfect fit just applied",
+      "TL;DR: Ready to build something amazing?",
+      "TL;DR: Your team's next game-changer is here",
+      "TL;DR: Ready to revolutionize your workflow?",
+      "TL;DR: The innovation you need just arrived",
+      "TL;DR: Your productivity is about to skyrocket",
+      "TL;DR: Ready to turn challenges into victories?",
+      "TL;DR: The solution to your hiring puzzle",
+      "TL;DR: Your next success story starts here",
+      "TL;DR: Ready to make waves in your industry?",
+      "TL;DR: The talent you've been waiting for",
+      "TL;DR: Ready to exceed every expectation?"
+    ],
+    techMetaphors: [
+      "code architect", "bug hunter", "performance ninja", "tech wizard", "digital craftsman",
+      "software artisan", "code whisperer", "tech alchemist", "digital architect", "innovation catalyst",
+      "problem solver", "tech transformer", "code sculptor", "digital innovator", "tech visionary",
+      "solution architect", "tech strategist", "digital pioneer", "code maestro", "innovation driver",
+      "tech trailblazer", "digital disruptor", "code virtuoso", "tech innovator", "solution engineer"
+    ],
+    actionPhrases: [
+      "Let's build something incredible together",
+      "Ready to make magic happen",
+      "Time to create something extraordinary",
+      "Let's turn ideas into reality",
+      "Ready to push boundaries together",
+      "Let's innovate and inspire",
+      "Time to build the future",
+      "Ready to make an impact",
+      "Let's create something amazing",
+      "Ready to transform possibilities",
+      "Let's revolutionize the industry together",
+      "Ready to break new ground",
+      "Time to set new standards",
+      "Let's craft something legendary",
+      "Ready to lead the charge",
+      "Let's make history together",
+      "Ready to exceed all expectations",
+      "Time to build something revolutionary",
+      "Let's create the impossible",
+      "Ready to change the game"
+    ]
+  };
+
+  // Use timestamp and context to ensure uniqueness
+  const seed = Date.now() + Math.random() + (company || '').length + (jobTitle || '').length;
+  const randomOpener = creativeElements.tldrOpeners[Math.floor(seed % creativeElements.tldrOpeners.length)];
+  const randomMetaphor = creativeElements.techMetaphors[Math.floor((seed * 1.5) % creativeElements.techMetaphors.length)];
+  const randomAction = creativeElements.actionPhrases[Math.floor((seed * 2.3) % creativeElements.actionPhrases.length)];
+
+  const composePrompt = `Write a unique, creative job application email. Return ONLY valid JSON with these exact fields: {"subject","body","reason"}.
 
 CONTEXT:
 Role: ${role}
@@ -261,16 +321,22 @@ Availability: ${availability || 'flexible'}
 Location: ${location || 'remote/onsite'}
 
 REQUIREMENTS:
-- EXACTLY 3 paragraphs, 200-260 words total
-- Paragraph 1: ${tone === 'tldr' ? 'Start with an innovative, fun opener like "TL;DR: I\'m the developer your team didn\'t know they needed" or "TL;DR: Ready to turn your tech stack into a powerhouse?" - be creative and memorable. Introduce yourself and the role.' : 'Professional introduction with your background and interest in the role.'}
-- Paragraph 2: Showcase your skills, achievements, and relevant experience. Include specific examples and metrics.
-- Paragraph 3: ${tone === 'tldr' ? 'Creative call-to-action with personality. Use tech metaphors and show enthusiasm.' : 'Professional call-to-action with next steps and availability.'}
-- ${tone === 'tldr' ? 'Be innovative, use tech metaphors, show personality while staying professional. Make HR think "this person is creative and would bring fresh energy to our team". Use phrases like "code wizard", "bug slayer", "performance optimizer", or creative analogies' : 'Be results-focused and confident'}
+- EXACTLY 3 paragraphs, 180-220 words total (be concise!)
+- Paragraph 1: ${tone === 'tldr' ? `Start with a creative, unique opener. Be innovative and memorable. Use fresh language and avoid clichés. Introduce yourself and the role with personality. Keep it brief and punchy.` : 'Professional introduction with your background and interest in the role. Be specific and engaging. Keep it concise.'}
+- Paragraph 2: Showcase your skills, achievements, and relevant experience. Include specific examples and metrics. Make it personal and compelling. Be direct and to the point.
+- Paragraph 3: ${tone === 'tldr' ? 'Creative call-to-action with personality. Use fresh metaphors and show genuine enthusiasm. Be memorable and engaging. Keep it short and impactful.' : 'Professional call-to-action with clear next steps and availability. Be confident and specific. Keep it brief.'}
+
+CREATIVITY RULES:
+- ${tone === 'tldr' ? 'Be innovative, creative, and unique every time. Use fresh tech metaphors, show personality, and make HR think "this person is creative and would bring fresh energy". Avoid repetitive phrases and clichés.' : 'Be results-focused, confident, and professional. Use specific examples and clear value propositions.'}
+- NEVER repeat the same phrases, metaphors, or structures from previous emails
+- Make each email feel fresh, unique, and personally crafted
+- Use varied vocabulary and sentence structures
+- Be authentic and genuine in your approach
 
 CRITICAL: Return ONLY valid JSON, no other text, no code blocks, no explanations:
 {
   "subject": "Email subject (max 70 chars)",
-  "body": "Email body (3 paragraphs, 200-260 words)",
+  "body": "Email body (3 paragraphs, 180-220 words)",
   "reason": "Brief approach explanation"
 }`;
 
@@ -293,11 +359,13 @@ CRITICAL: Return ONLY valid JSON, no other text, no code blocks, no explanations
             
             CRITICAL: The email body MUST be exactly 3 paragraphs. Each paragraph should be well-structured and readable.
             
-            For TLDR tone: Be innovative, fun, and memorable while staying professional. Use creative tech metaphors, show personality, and make the email stand out. Think like a creative developer who knows how to make an impression.` 
+            UNIQUENESS REQUIREMENT: Every email must be completely unique and different from previous ones. Never repeat phrases, structures, or approaches. Be creative and innovative every single time.
+            
+            For TLDR tone: Be innovative, fun, and memorable while staying professional. Use creative tech metaphors, show personality, and make the email stand out. Think like a creative developer who knows how to make an impression. Vary your language, metaphors, and approach every time.` 
           },
           { role: 'user', content: composePrompt },
         ],
-        temperature: typeof opts.temperature === 'number' ? opts.temperature : (tone === 'tldr' ? 0.6 : 0.3),
+        temperature: typeof opts.temperature === 'number' ? opts.temperature : (tone === 'tldr' ? 0.8 : 0.4),
         max_tokens: typeof opts.maxTokens === 'number' ? opts.maxTokens : 800,
       });
       
@@ -336,6 +404,19 @@ CRITICAL: Return ONLY valid JSON, no other text, no code blocks, no explanations
 
 router.post('/generate', async (req, res) => {
   try {
+    // Simple rate limiting for startup phase
+    const sessionKey = 'cold_email_count_' + new Date().toDateString();
+    const currentCount = parseInt(req.session?.[sessionKey] || '0');
+    
+    if (currentCount >= 10) {
+      return res.status(429).json({
+        error: 'Daily limit reached',
+        message: 'You\'ve reached the daily limit of 10 cold emails. Premium plans coming soon!',
+        limit: 10,
+        used: currentCount
+      });
+    }
+
     // Ensure req.body exists and is an object
     const body = req.body || {};
 
@@ -344,7 +425,6 @@ router.post('/generate', async (req, res) => {
       skills = '',
       role = 'HR',
       company = '',
-      industry = '',
       jobTitle = '',
       achievements = '',
       portfolioLinks = '',
@@ -401,9 +481,9 @@ router.post('/generate', async (req, res) => {
     if (!modelWorking) {
       throw new Error('All AI models are currently unavailable. Please try again in a few moments.');
     }
-    const lengthBounds = [200, 260];
+    const lengthBounds = [180, 220];
     const maxTokens = lowCost ? 600 : 800; // Increased significantly for proper email generation
-    const temperature = lowCost ? 0.2 : (tone === 'tldr' ? 0.6 : 0.3); // Higher creativity for TLDR
+    const temperature = lowCost ? 0.2 : (tone === 'tldr' ? 0.8 : 0.4); // Higher creativity for TLDR
 
     // First compose pass (AI only) - enhanced retry logic
     let draft = null;
@@ -416,7 +496,6 @@ router.post('/generate', async (req, res) => {
           model,
           role,
           company,
-          industry,
           jobTitle,
           skillsForPrompt,
           achievements,
@@ -469,7 +548,6 @@ router.post('/generate', async (req, res) => {
           model,
           role,
           company,
-          industry,
           jobTitle,
           skillsForPrompt,
           achievements,
@@ -480,7 +558,7 @@ router.post('/generate', async (req, res) => {
           availability,
           location,
           purpose: 'refine',
-          opts: { maxTokens: maxTokens + 200, temperature: tone === 'tldr' ? 0.7 : temperature + 0.1 }
+          opts: { maxTokens: maxTokens + 200, temperature: tone === 'tldr' ? 0.9 : temperature + 0.1 }
         });
         
         if (refine && refine.subject && refine.body && refine.subject.trim() !== '' && 
@@ -501,7 +579,6 @@ router.post('/generate', async (req, res) => {
           model,
           role,
           company,
-          industry,
           jobTitle,
           skillsForPrompt,
           achievements,
@@ -512,7 +589,7 @@ router.post('/generate', async (req, res) => {
           availability,
           location,
           purpose: 'final_attempt',
-          opts: { maxTokens: 1000, temperature: tone === 'tldr' ? 0.8 : 0.4 }
+          opts: { maxTokens: 1000, temperature: tone === 'tldr' ? 1.0 : 0.5 }
         });
         
         if (finalAttempt && finalAttempt.subject && finalAttempt.body && 
@@ -529,7 +606,20 @@ router.post('/generate', async (req, res) => {
     const subjectOut = String(draft.subject || '').trim().slice(0, 120) || `Application — ${jobTitle || 'Role'} at ${company || 'your team'}`.slice(0, 70);
     const bodyOut = String(draft.body || '').trim().slice(0, 4000);
 
-    res.json({ to, subject: subjectOut, body: bodyOut, reason: draft.reason });
+    // Increment daily counter
+    if (req.session) {
+      req.session[sessionKey] = (currentCount + 1).toString();
+    }
+
+    res.json({ 
+      to, 
+      subject: subjectOut, 
+      body: bodyOut, 
+      reason: draft.reason,
+      dailyLimit: 10,
+      used: currentCount + 1,
+      remaining: 10 - (currentCount + 1)
+    });
   } catch (err) {
     console.error('Cold email generate error:', err?.response?.data || err);
     console.error('Full generate error:', err);
@@ -557,7 +647,6 @@ router.post('/suggest', async (req, res) => {
     // if (!tokens) return res.status(401).json({ error: 'Not authenticated' });
 
     const {
-      industry = '',
       role = 'HR',
       company = '',
       skills = '',
@@ -586,13 +675,12 @@ router.post('/suggest', async (req, res) => {
     const prompt = `You are a career advisor helping someone write a job application email.
 
 CONTEXT:
-- Industry: ${String(industry).trim().slice(0, 50) || 'general'}
 - Role: ${String(role).trim().slice(0, 30) || 'HR'}
 - Company: ${String(company).trim().slice(0, 50) || 'a company'}
 - Current Skills: ${String(skills).trim().slice(0, 100) || 'various skills'}
 - Job Title: ${String(jobTitle).trim().slice(0, 50) || 'a position'}
 
-TASK: Suggest improvements for a job application email.
+TASK: Based on the job title, suggest relevant improvements for a job application email.
 
 Return ONLY valid JSON in this exact format:
 {

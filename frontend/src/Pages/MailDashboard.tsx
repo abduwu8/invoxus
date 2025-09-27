@@ -1,64 +1,52 @@
 function NewFeatureModal({ onClose, onTryCold }: { onClose: () => void; onTryCold: () => void }) {
   return (
-    <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="w-full max-w-sm bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4">
+      <div className="w-full max-w-sm bg-white rounded-lg shadow-lg">
         {/* Header */}
-        <div className="px-6 py-5">
+        <div className="px-6 py-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
-                <Sparkles className="w-5 h-5 text-white" />
+              <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
+                <Sparkles className="w-4 h-4 text-white" />
               </div>
               <div>
-                <div className="text-lg font-semibold text-gray-900 dark:text-white">Smarter Cold Emails</div>
-                <div className="text-sm text-gray-500 dark:text-gray-400">AI-powered & personalized</div>
+                <div className="text-lg font-semibold text-black">Smarter Cold Emails</div>
+                <div className="text-sm text-gray-600">AI-powered & personalized</div>
               </div>
             </div>
             <button 
               onClick={onClose} 
-              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100"
             >
-              <X className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              <X className="w-4 h-4 text-gray-600" />
             </button>
           </div>
         </div>
 
         {/* Content */}
-        <div className="px-6 pb-6">
-          <div className="space-y-4">
+        <div className="px-6 py-4">
+          <div className="space-y-3">
             <div className="flex items-start gap-3">
-              <div className="w-6 h-6 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                <svg className="w-3 h-3 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-              </div>
+              <div className="w-1.5 h-1.5 bg-black rounded-full mt-2 flex-shrink-0"></div>
               <div>
-                <div className="text-sm font-medium text-gray-900 dark:text-white">Role-aware AI</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">Writes personalized drafts based on your skills</div>
+                <div className="text-sm font-medium text-black">Role-aware AI</div>
+                <div className="text-xs text-gray-600">Writes personalized drafts based on your skills</div>
               </div>
             </div>
 
             <div className="flex items-start gap-3">
-              <div className="w-6 h-6 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                <svg className="w-3 h-3 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-              </div>
+              <div className="w-1.5 h-1.5 bg-black rounded-full mt-2 flex-shrink-0"></div>
               <div>
-                <div className="text-sm font-medium text-gray-900 dark:text-white">Smart suggestions</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">Auto-fills skills, achievements & fit</div>
+                <div className="text-sm font-medium text-black">Smart suggestions</div>
+                <div className="text-xs text-gray-600">Auto-fills skills, achievements & fit</div>
               </div>
             </div>
 
             <div className="flex items-start gap-3">
-              <div className="w-6 h-6 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                <svg className="w-3 h-3 text-purple-600 dark:text-purple-400" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-              </div>
+              <div className="w-1.5 h-1.5 bg-black rounded-full mt-2 flex-shrink-0"></div>
               <div>
-                <div className="text-sm font-medium text-gray-900 dark:text-white">Creative tone</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">Fun TL;DR style that stands out</div>
+                <div className="text-sm font-medium text-black">Creative tone</div>
+                <div className="text-xs text-gray-600">Fun TL;DR style that stands out</div>
               </div>
             </div>
           </div>
@@ -67,13 +55,13 @@ function NewFeatureModal({ onClose, onTryCold }: { onClose: () => void; onTryCol
           <div className="mt-6 flex gap-3">
             <button 
               onClick={onClose} 
-              className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              className="flex-1 px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200"
             >
               Later
             </button>
             <button 
               onClick={onTryCold} 
-              className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg"
+              className="flex-1 px-4 py-2 text-sm font-medium text-white bg-black rounded-lg hover:bg-gray-800"
             >
               Try Now
             </button>
@@ -1286,7 +1274,6 @@ export default function MailDashboard() {
             skills: string;
             role?: string;
             company?: string;
-            industry?: string;
             jobTitle?: string;
             achievements?: string;
             portfolioLinks?: string;
@@ -2413,7 +2400,6 @@ function ComposeColdEmailModal({
   const [role, setRole] = useState('HR')
   const [company, setCompany] = useState('')
   const [skills, setSkills] = useState('')
-  const [industry, setIndustry] = useState('')
   const [jobTitle, setJobTitle] = useState('')
   const [achievements, setAchievements] = useState('')
   const [portfolioLinks, setPortfolioLinks] = useState('')
@@ -2431,18 +2417,17 @@ function ComposeColdEmailModal({
   const [suggestionNote, setSuggestionNote] = useState<string | null>(null)
   const previewRef = useRef<HTMLDivElement | null>(null)
 
-  // Fetch AI-driven suggestions when inputs change; only fill empty fields
+  // Fetch AI-driven suggestions when job title changes; only fill empty fields
   useEffect(() => {
     const controller = new AbortController()
     const timer = setTimeout(async () => {
-      const keyCombined = `${String(industry || '').trim()} ${String(jobTitle || '').trim()} ${String(skills || '').trim()}`.trim()
-      if (!keyCombined || keyCombined.length < 2) return
+      if (!jobTitle.trim() || jobTitle.trim().length < 2) return
       try {
         const r = await fetch(`${API_BASE}/api/cold-email/suggest`, {
           method: 'POST',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ industry, role, company, skills, jobTitle, portfolioLinks }),
+          body: JSON.stringify({ industry: '', role, company, skills, jobTitle, portfolioLinks }),
           signal: controller.signal,
         })
         if (!r.ok) return
@@ -2466,13 +2451,13 @@ function ComposeColdEmailModal({
         if (s.location && !location.trim()) { setLocation(s.location); applied = true }
         if (s.tone && tone === 'professional') { setTone(s.tone) }
         if (applied) {
-          setSuggestionNote('AI suggestions applied')
+          setSuggestionNote('✨ AI suggestions applied based on job title')
           setTimeout(() => setSuggestionNote(null), 2500)
         }
       } catch {}
     }, 350)
     return () => { controller.abort(); clearTimeout(timer) }
-  }, [industry, jobTitle, skills])
+  }, [jobTitle])
 
   const toInvalid = !!to && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)
   const wordCount = body ? body.trim().split(/\s+/).filter(Boolean).length : 0
@@ -2485,7 +2470,7 @@ function ComposeColdEmailModal({
             <Sparkles className="size-4 text-violet-400" />
             <div>
               <div className="text-sm font-medium text-neutral-200">Cold email</div>
-              <div className="text-xs text-neutral-500">Generate a concise, personalized outreach</div>
+              <div className="text-xs text-neutral-500">Generate a concise, personalized outreach • 10/day limit</div>
             </div>
           </div>
           <button className="size-8 grid place-items-center rounded hover:bg-neutral-900" onClick={onClose}>
@@ -2516,13 +2501,9 @@ function ComposeColdEmailModal({
                 </div>
               </div>
               <div>
-                <label className="block text-xs text-neutral-500 mb-1">Industry</label>
-                <input value={industry} onChange={(e) => setIndustry(e.target.value)} className="w-full rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-neutral-700" placeholder="e.g. fintech, SaaS, e-commerce" />
-                {suggestionNote ? <div className="mt-1 text-[11px] text-violet-300">{suggestionNote}</div> : null}
-              </div>
-              <div>
-                <label className="block text-xs text-neutral-500 mb-1">Job title you’re targeting</label>
+                <label className="block text-xs text-neutral-500 mb-1">Job title you're targeting</label>
                 <input value={jobTitle} onChange={(e) => setJobTitle(e.target.value)} className="w-full rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-neutral-700" placeholder="e.g. Frontend Engineer" />
+                {suggestionNote ? <div className="mt-1 text-[11px] text-violet-300">{suggestionNote}</div> : null}
               </div>
               <div>
                 <label className="block text-xs text-neutral-500 mb-1">Key skills</label>
@@ -2579,7 +2560,6 @@ function ComposeColdEmailModal({
                         skills,
                         role,
                         company,
-                        industry,
                         jobTitle,
                         achievements,
                         portfolioLinks,
