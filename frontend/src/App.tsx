@@ -10,6 +10,15 @@ function App() {
   // Initialize to empty so refresh renders Hero by default
   const [route, setRoute] = useState<string>('')
 
+  // Hide privacy banner when user is logged in
+  useEffect(() => {
+    if (loggedIn) {
+      document.body.classList.add('hide-privacy-banner')
+    } else {
+      document.body.classList.remove('hide-privacy-banner')
+    }
+  }, [loggedIn])
+
   // Minimal hash-based routing for marketing pages (reactive)
   useEffect(() => {
     const handle = () => setRoute(window.location.hash.replace(/^#/, ''))

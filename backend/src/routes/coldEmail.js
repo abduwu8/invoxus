@@ -85,18 +85,18 @@ Location: remote
 
 REQUIREMENTS:
 - Format as a proper email with salutation and closing
-- EXACTLY 3 paragraphs, 180-220 words total (be concise!)
+- EXACTLY 2 paragraphs, 120-160 words total (be concise!)
 - Start with appropriate salutation (Dear [Name/Team], Hi [Name], etc.)
 - Paragraph 1: Start with an innovative, fun opener like "TL;DR: I'm the developer your team didn't know they needed" or "TL;DR: Ready to turn your tech stack into a powerhouse?" - be creative and memorable. Introduce yourself and the role. Keep it brief and punchy.
-- Paragraph 2: Showcase your skills, achievements, and relevant experience. Include specific examples and metrics. Be direct and to the point.
-- Paragraph 3: Creative call-to-action with personality. Use tech metaphors and show enthusiasm. Keep it short and impactful.
+- Paragraph 2: Showcase your skills, achievements, and relevant experience using bullet points for key highlights. Include specific examples and metrics. End with a creative call-to-action with personality. Use tech metaphors and show enthusiasm. Be direct and to the point.
+- After the second paragraph, include a clean links section followed by LinkedIn and GitHub links (use actual URLs from portfolioLinks if provided, otherwise use placeholder URLs)
 - End with proper email closing (Best regards, Sincerely, etc.) and signature placeholder
 - Be innovative, use tech metaphors, show personality while staying professional. Make HR think "this person is creative and would bring fresh energy to our team". Use phrases like "code wizard", "bug slayer", "performance optimizer", or creative analogies
 
 CRITICAL: Return ONLY valid JSON, no other text, no code blocks, no explanations:
 {
   "subject": "Email subject (max 70 chars)",
-  "body": "Proper email format with salutation, 3 paragraphs (180-220 words), and closing",
+  "body": "Proper email format with salutation, 2 paragraphs with bullet points (120-160 words), links section, and closing",
   "reason": "Brief approach explanation"
 }`;
 
@@ -107,7 +107,7 @@ CRITICAL: Return ONLY valid JSON, no other text, no code blocks, no explanations
           role: 'system', 
           content: `You are a professional email writer with a creative edge. Always return valid JSON with subject, body, and reason fields. Never return empty responses or code blocks.
           
-          CRITICAL: The email body MUST be exactly 3 paragraphs. Each paragraph should be well-structured and readable.
+          CRITICAL: The email body MUST be exactly 2 paragraphs. Each paragraph should be well-structured and readable.
           
           For TLDR tone: Be innovative, fun, and memorable while staying professional. Use creative tech metaphors, show personality, and make the email stand out. Think like a creative developer who knows how to make an impression.` 
         },
@@ -144,20 +144,20 @@ function createOAuthClientFromSession(tokens) {
   return oauth2Client;
 }
 
-// Validate that email body has exactly 3 paragraphs
-function validateThreeParagraphs(body) {
+// Validate that email body has exactly 2 paragraphs
+function validateTwoParagraphs(body) {
   if (!body || typeof body !== 'string') return false;
   
   // Split by double line breaks or paragraph breaks
   const paragraphs = body.split(/\n\s*\n/).filter(p => p.trim().length > 0);
   
   // Also check for single line breaks that might indicate paragraphs
-  if (paragraphs.length < 3) {
+  if (paragraphs.length < 2) {
     const singleLineParagraphs = body.split(/\n/).filter(p => p.trim().length > 20);
-    return singleLineParagraphs.length >= 3;
+    return singleLineParagraphs.length >= 2;
   }
   
-  return paragraphs.length >= 3;
+  return paragraphs.length >= 2;
 }
 
 // Manual content extraction when JSON parsing fails
@@ -265,11 +265,11 @@ Location: ${location || 'remote/onsite'}
 
 REQUIREMENTS:
 - Format as a proper email with salutation and closing
-- EXACTLY 3 paragraphs, 180-220 words total (be concise!)
+- EXACTLY 2 paragraphs, 120-160 words total (be concise!)
 - Start with appropriate salutation (Dear [Name/Team], Hi [Name], etc.)
 - Paragraph 1: ${tone === 'tldr' ? `Start with a creative, unique opener. Be innovative and memorable. Use fresh language and avoid clichés. Introduce yourself and the role with personality. Keep it brief and punchy.` : 'Professional introduction with your background and interest in the role. Be specific and engaging. Keep it concise.'}
-- Paragraph 2: Showcase your skills, achievements, and relevant experience. Include specific examples and metrics. Make it personal and compelling. Be direct and to the point.
-- Paragraph 3: ${tone === 'tldr' ? 'Creative call-to-action with personality. Use fresh metaphors and show genuine enthusiasm. Be memorable and engaging. Keep it short and impactful.' : 'Professional call-to-action with clear next steps and availability. Be confident and specific. Keep it brief.'}
+- Paragraph 2: Showcase your skills, achievements, and relevant experience using bullet points for key highlights. Include specific examples and metrics. Make it personal and compelling. ${tone === 'tldr' ? 'End with a creative call-to-action with personality. Use fresh metaphors and show genuine enthusiasm. Be memorable and engaging. Keep it short and impactful.' : 'End with a professional call-to-action with clear next steps and availability. Be confident and specific. Keep it brief.'}
+- After the second paragraph, include a clean links section with the exact format: "You can view my portfolio and experience here:" followed by LinkedIn and GitHub links (use actual URLs from portfolioLinks if provided, otherwise use placeholder URLs)
 - End with proper email closing (Best regards, Sincerely, etc.) and signature placeholder
 
 CREATIVITY RULES:
@@ -285,7 +285,7 @@ CREATIVITY RULES:
 CRITICAL: Return ONLY valid JSON, no other text, no code blocks, no explanations:
 {
   "subject": "Email subject (max 70 chars)",
-  "body": "Proper email format with salutation, 3 paragraphs (180-220 words), and closing",
+  "body": "Proper email format with salutation, 2 paragraphs with bullet points (120-160 words), links section, and closing",
   "reason": "Brief approach explanation"
 }`;
 
@@ -308,7 +308,9 @@ CRITICAL: Return ONLY valid JSON, no other text, no code blocks, no explanations
             
             CRITICAL: The email body MUST be formatted as a proper email with:
             - Appropriate salutation (Dear [Name/Team], Hi [Name], etc.)
-            - Exactly 3 well-structured paragraphs (180-220 words total)
+            - Exactly 2 well-structured paragraphs (120-160 words total)
+            - Use bullet points in the second paragraph to highlight key skills, achievements, and experience
+            - After the second paragraph, include a clean links section: "You can view my portfolio and experience here:" followed by LinkedIn and GitHub links
             - Proper email closing (Best regards, Sincerely, etc.)
             - Signature placeholder ([Your Name])
             
@@ -329,14 +331,14 @@ CRITICAL: Return ONLY valid JSON, no other text, no code blocks, no explanations
         
         if (parsed && typeof parsed === 'object' && parsed.subject && parsed.body && 
             parsed.subject.trim() !== '' && parsed.body.trim() !== '' && 
-            validateThreeParagraphs(parsed.body)) {
+            validateTwoParagraphs(parsed.body)) {
           return parsed;
         } else {
           
           // Try to extract content manually if JSON parsing failed
           const manualExtract = extractEmailContentManually(text);
           if (manualExtract && manualExtract.subject && manualExtract.body && 
-              validateThreeParagraphs(manualExtract.body)) {
+              validateTwoParagraphs(manualExtract.body)) {
             return manualExtract;
           }
         }
@@ -434,7 +436,7 @@ router.post('/generate', async (req, res) => {
     if (!modelWorking) {
       throw new Error('All AI models are currently unavailable. Please try again in a few moments.');
     }
-    const lengthBounds = [180, 220];
+    const lengthBounds = [120, 160];
     const maxTokens = lowCost ? 600 : 800; // Increased significantly for proper email generation
     const temperature = lowCost ? 0.2 : (tone === 'tldr' ? 1.0 : 0.6); // Maximum creativity for TLDR
 
@@ -462,9 +464,9 @@ router.post('/generate', async (req, res) => {
           opts: { maxTokens, temperature }
         });
         
-        // If we got a valid draft with 3 paragraphs, break out of retry loop
+        // If we got a valid draft with 2 paragraphs, break out of retry loop
         if (draft && draft.subject && draft.body && draft.subject.trim() !== '' && 
-            draft.body.trim() !== '' && validateThreeParagraphs(draft.body)) {
+            draft.body.trim() !== '' && validateTwoParagraphs(draft.body)) {
           break;
         }
       } catch (e) {
@@ -478,10 +480,10 @@ router.post('/generate', async (req, res) => {
       }
     }
     
-    // If we still don't have a valid draft with 3 paragraphs, throw error
+    // If we still don't have a valid draft with 2 paragraphs, throw error
     if (!draft || !draft.subject || !draft.body || draft.subject.trim() === '' || 
-        draft.body.trim() === '' || !validateThreeParagraphs(draft.body)) {
-      throw new Error('Failed to generate valid email content with 3 paragraphs after multiple attempts');
+        draft.body.trim() === '' || !validateTwoParagraphs(draft.body)) {
+      throw new Error('Failed to generate valid email content with 2 paragraphs after multiple attempts');
     }
 
     // Refine loop to hit tone/length - only if needed
@@ -515,7 +517,7 @@ router.post('/generate', async (req, res) => {
         });
         
         if (refine && refine.subject && refine.body && refine.subject.trim() !== '' && 
-            refine.body.trim() !== '' && validateThreeParagraphs(refine.body)) {
+            refine.body.trim() !== '' && validateTwoParagraphs(refine.body)) {
           draft = refine;
         }
       } catch (e) {
@@ -546,10 +548,10 @@ router.post('/generate', async (req, res) => {
         });
         
         if (finalAttempt && finalAttempt.subject && finalAttempt.body && 
-            validateThreeParagraphs(finalAttempt.body)) {
+            validateTwoParagraphs(finalAttempt.body)) {
           draft = finalAttempt;
         } else {
-          throw new Error('AI failed to generate valid email content with 3 paragraphs after multiple attempts');
+          throw new Error('AI failed to generate valid email content with 2 paragraphs after multiple attempts');
         }
       } catch (finalError) {
         throw new Error(`AI email generation failed: ${finalError.message}. Please try again.`);

@@ -1,67 +1,63 @@
 function NewFeatureModal({ onClose, onTryCold }: { onClose: () => void; onTryCold: () => void }) {
   return (
-    <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4">
-      <div className="w-full max-w-sm bg-white rounded-lg shadow-lg">
+    <div className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-black border border-gray-800 rounded-lg shadow-2xl">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-200">
+        <div className="px-6 py-4 border-b border-gray-800">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
-                <Sparkles className="w-4 h-4 text-white" />
-              </div>
-              <div>
-                <div className="text-lg font-semibold text-black">Smarter Cold Emails</div>
-                <div className="text-sm text-gray-600">AI-powered & personalized</div>
-              </div>
+            <div>
+              <div className="text-lg font-semibold text-white">What's New</div>
+              <div className="text-sm text-gray-400">Enhanced Cold Email Features</div>
             </div>
             <button 
               onClick={onClose} 
-              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100"
+              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-800 text-gray-400 hover:text-white"
             >
-              <X className="w-4 h-4 text-gray-600" />
+              <X className="w-4 h-4" />
             </button>
           </div>
         </div>
 
         {/* Content */}
-        <div className="px-6 py-4">
-          <div className="space-y-3">
-            <div className="flex items-start gap-3">
-              <div className="w-1.5 h-1.5 bg-black rounded-full mt-2 flex-shrink-0"></div>
-              <div>
-                <div className="text-sm font-medium text-black">Role-aware AI</div>
-                <div className="text-xs text-gray-600">Writes personalized drafts based on your skills</div>
-              </div>
+        <div className="px-6 py-6">
+          <div className="space-y-4 text-gray-300">
+            <div>
+              <div className="text-sm font-medium text-white mb-1">Optimized Email Structure</div>
+              <div className="text-xs text-gray-400">Streamlined to 2 focused paragraphs with strategic bullet points for maximum impact and readability</div>
             </div>
 
-            <div className="flex items-start gap-3">
-              <div className="w-1.5 h-1.5 bg-black rounded-full mt-2 flex-shrink-0"></div>
-              <div>
-                <div className="text-sm font-medium text-black">Smart suggestions</div>
-                <div className="text-xs text-gray-600">Auto-fills skills, achievements & fit</div>
-              </div>
+            <div>
+              <div className="text-sm font-medium text-white mb-1">Professional Links Integration</div>
+              <div className="text-xs text-gray-400">Clean portfolio showcase with LinkedIn and GitHub links for instant credibility verification</div>
             </div>
 
-            <div className="flex items-start gap-3">
-              <div className="w-1.5 h-1.5 bg-black rounded-full mt-2 flex-shrink-0"></div>
-              <div>
-                <div className="text-sm font-medium text-black">Creative tone</div>
-                <div className="text-xs text-gray-600">Fun TL;DR style that stands out</div>
-              </div>
+            <div>
+              <div className="text-sm font-medium text-white mb-1">Enhanced AI Intelligence</div>
+              <div className="text-xs text-gray-400">Smarter content generation with improved tone matching and personalized messaging strategies</div>
+            </div>
+
+            <div>
+              <div className="text-sm font-medium text-white mb-1">Instant Success Feedback</div>
+              <div className="text-xs text-gray-400">Real-time notifications confirm successful email delivery, keeping you informed every step of the way</div>
+            </div>
+
+            <div>
+              <div className="text-sm font-medium text-white mb-1">Professional Presentation</div>
+              <div className="text-xs text-gray-400">Refined formatting ensures your cold emails stand out with executive-level polish and attention to detail</div>
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="mt-6 flex gap-3">
+          <div className="mt-8 flex gap-3">
             <button 
               onClick={onClose} 
-              className="flex-1 px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200"
+              className="flex-1 px-4 py-2 text-sm font-medium text-gray-400 bg-gray-900 border border-gray-700 rounded-lg hover:bg-gray-800 hover:text-white transition-colors"
             >
               Later
             </button>
             <button 
               onClick={onTryCold} 
-              className="flex-1 px-4 py-2 text-sm font-medium text-white bg-black rounded-lg hover:bg-gray-800"
+              className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
             >
               Try Now
             </button>
@@ -72,7 +68,7 @@ function NewFeatureModal({ onClose, onTryCold }: { onClose: () => void; onTryCol
   )
 }
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Star, Reply as LucideReply, Trash2, Wand2, Send, X, Plus, Inbox, MessageSquare, Bot, Sparkles, CheckSquare, KeyRound, LogOut, Menu, ArrowLeft, ThumbsUp, ThumbsDown, Paperclip } from 'lucide-react'
+import { Star, Reply as LucideReply, Trash2, Wand2, Send, X, Plus, Inbox, MessageSquare, Sparkles, CheckSquare, KeyRound, LogOut, Menu, ArrowLeft, ThumbsUp, ThumbsDown, Paperclip } from 'lucide-react'
 import { PlaceholdersAndVanishInput } from '../components/ui/reveal'
 import { LoaderOne } from '../components/loader'
 // Emoji picker removed for now
@@ -1769,149 +1765,147 @@ function ChatModal({
   }, [history])
   return (
     <div className="fixed inset-0 md:inset-auto md:right-6 md:bottom-6 z-50 flex md:block">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm md:hidden" onClick={onClose} />
-      <div className="relative w-full h-full md:h-[80vh] md:max-h-[90vh] md:w-[480px] md:max-w-[92vw] rounded-none md:rounded-2xl border border-neutral-800/80 bg-neutral-950/95 shadow-2xl overflow-hidden flex flex-col ml-auto">
-        <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 border-b border-neutral-800 bg-gradient-to-b from-neutral-950/90 to-neutral-900/50">
-          <div className="flex items-center gap-2 text-sm font-semibold text-neutral-200 tracking-wide">
-            <Bot className="size-4 text-blue-400" />
-            Invoxus Assistant
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm md:hidden" onClick={onClose} />
+      <div className="relative w-full h-full md:h-[85vh] md:max-h-[90vh] md:w-[520px] md:max-w-[92vw] rounded-none md:rounded-3xl border border-white/10 bg-black shadow-2xl overflow-hidden flex flex-col ml-auto">
+        <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b border-white/10 bg-black">
+          <div>
+            <div className="text-base font-semibold text-white">Assistant</div>
+            <div className="text-xs text-gray-400">AI-powered email help</div>
           </div>
-          <button className="size-8 grid place-items-center rounded hover:bg-neutral-900" onClick={onClose}>
-            <X className="size-4" />
+          <button className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors" onClick={onClose}>
+            <X className="w-4 h-4 text-white" />
           </button>
         </div>
-        <div className="p-4 flex flex-col gap-3 flex-1 overflow-hidden">
-          <div className="rounded-md border border-yellow-800/50 bg-yellow-900/20 text-yellow-200 text-xs px-3 py-2">
-            Disclaimer: AI responses may be inaccurate or incomplete. It can give wrong answers and might not be able to go through all emails.
-          </div>
-          {showExamples ? (
-            <>
-              <div className="grid place-items-center py-4">
-                <div className="size-12 grid place-items-center rounded-xl border border-neutral-800 bg-neutral-900 text-blue-300">
-                  <Bot className="size-5" />
+        <div className="flex flex-col h-full">
+          <div className="px-6 py-4 flex flex-col gap-4 flex-1 overflow-hidden">
+            {showExamples ? (
+              <>
+                <div className="text-center py-8">
+                  <div className="text-lg font-medium text-white mb-2">How can I help you today?</div>
+                  <div className="text-sm text-gray-400">Ask me anything about your emails</div>
                 </div>
-              </div>
-              <div className="text-center">
-                <div className="text-sm font-medium text-neutral-200">Ask anything about your emails</div>
-                <div className="text-xs text-neutral-500 mt-1">Use natural language to search, summarize and act</div>
-              </div>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {suggestions.map((s, i) => (
-                  <button
-                    key={i}
-                    className="inline-flex items-center gap-1 rounded-full border border-neutral-800 px-3 py-1 text-xs text-neutral-300 hover:bg-neutral-900"
-                    onClick={() => setValue(s)}
-                  >
-                    <Sparkles className="size-3 text-yellow-300" /> {s}
-                  </button>
-                ))}
-              </div>
-            </>
-          ) : null}
+                <div className="grid grid-cols-1 gap-2">
+                  {suggestions.map((s, i) => (
+                    <button
+                      key={i}
+                      className="text-left px-4 py-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-white text-sm transition-colors"
+                      onClick={() => setValue(s)}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : null}
 
-          {/* Messages */}
-          <div ref={messagesRef} className="mt-1 space-y-2 flex-1 overflow-y-auto pr-1 no-scrollbar">
-            {history.slice(-12).map((m, idx) => (
-              <div key={idx} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div
-                  className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm border shadow-sm ${
-                    m.role === 'user'
-                      ? 'bg-blue-600/15 border-blue-700/40 text-neutral-100'
-                      : 'bg-neutral-900/60 border-neutral-800 text-neutral-200'
-                  }`}
-                >
-                  {m.text}
+            {/* Messages */}
+            <div ref={messagesRef} className="space-y-4 flex-1 overflow-y-auto pr-2 no-scrollbar">
+              {history.slice(-12).map((m, idx) => (
+                <div key={idx} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div
+                    className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm ${
+                      m.role === 'user'
+                        ? 'bg-white text-black'
+                        : 'bg-white/10 text-white border border-white/20'
+                    }`}
+                  >
+                    {m.text}
+                  </div>
                 </div>
+              ))}
+              {sending ? (
+                <div className="flex justify-start">
+                  <div className="max-w-[80%] rounded-2xl px-4 py-3 text-sm bg-white/5 text-gray-400 border border-white/10">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-white/40 rounded-full animate-pulse"></div>
+                      <div className="w-2 h-2 bg-white/40 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
+                      <div className="w-2 h-2 bg-white/40 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+
+            {/* Preview & send panel – pinned below messages, above input */}
+            {pendingSend ? (
+              <div className="mt-2">
+                <PendingSendForm
+                  draft={pendingSend}
+                  onCancel={onCancelPendingSend}
+                  onConfirm={onConfirmSend}
+                />
               </div>
-            ))}
-            {sending ? (
-              <div className="flex justify-start">
-                <div className="max-w-[85%] rounded-2xl px-3 py-2 text-xs border border-neutral-800 text-neutral-400 bg-neutral-950">
-                  Thinking…
-                </div>
+            ) : null}
+
+            {/* Feedback (minimal) */}
+            {showFeedback ? (
+              <div className="flex items-center justify-end gap-1 pb-2">
+                <button
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/20 hover:bg-white/10 transition-colors"
+                  title="Good answer"
+                  aria-label="Thumbs up"
+                  onClick={() => {
+                    setShowFeedback(null)
+                    fetch('/api/chat/feedback', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ vote: 'up' }) }).catch(() => {})
+                  }}
+                >
+                  <ThumbsUp className="size-4 text-white" />
+                </button>
+                <button
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/20 hover:bg-white/10 transition-colors"
+                  title="Needs work"
+                  aria-label="Thumbs down"
+                  onClick={() => {
+                    setShowFeedback(null)
+                    fetch('/api/chat/feedback', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ vote: 'down' }) }).catch(() => {})
+                  }}
+                >
+                  <ThumbsDown className="size-4 text-white" />
+                </button>
               </div>
             ) : null}
           </div>
 
-          {/* Preview & send panel – pinned below messages, above input */}
-          {pendingSend ? (
-            <div className="mt-2">
-              <PendingSendForm
-                draft={pendingSend}
-                onCancel={onCancelPendingSend}
-                onConfirm={onConfirmSend}
-              />
-            </div>
-          ) : null}
-
-          {/* Feedback (minimal) */}
-          {showFeedback ? (
-            <div className="flex items-center justify-end gap-2 pb-1 -mt-1">
+          {/* Input - Fixed at bottom */}
+          <div className="px-6 py-4 border-t border-white/10 bg-black">
+            <div className="flex items-center gap-3">
+              <div className="flex-1 rounded-2xl border border-white/20 bg-white/5 p-3">
+                <PlaceholdersAndVanishInput
+                  placeholders={[
+                    'Find emails from Alice about invoices',
+                    'Summarize last week from John',
+                    'Email Nick a thank you note',
+                    'Schedule a follow up for tomorrow 9am',
+                  ]}
+                  onChange={(e) => setValue(e.target.value)}
+                  onSubmit={async (e) => {
+                    e.preventDefault()
+                    const q = value.trim()
+                    if (!q || sending) return
+                    setValue('')
+                    setSending(true)
+                    await onAsk(q)
+                    setSending(false)
+                  }}
+                />
+              </div>
               <button
-                className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-neutral-800 hover:bg-neutral-900"
-                title="Good answer"
-                aria-label="Thumbs up"
-                onClick={() => {
-                  setShowFeedback(null)
-                  // fire-and-forget feedback endpoint if available
-                  fetch('/api/chat/feedback', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ vote: 'up' }) }).catch(() => {})
-                }}
-              >
-                <ThumbsUp className="size-4" />
-              </button>
-              <button
-                className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-neutral-800 hover:bg-neutral-900"
-                title="Needs work"
-                aria-label="Thumbs down"
-                onClick={() => {
-                  setShowFeedback(null)
-                  fetch('/api/chat/feedback', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ vote: 'down' }) }).catch(() => {})
-                }}
-              >
-                <ThumbsDown className="size-4" />
-              </button>
-            </div>
-          ) : null}
-
-          {/* Input */}
-          <div className="flex items-center gap-2 pt-2">
-            <div className="flex-1 rounded-xl border border-neutral-800 bg-neutral-900/40 p-1">
-              <PlaceholdersAndVanishInput
-                placeholders={[
-                  'Find emails from Alice about invoices',
-                  'Summarize last week from John',
-                  'Email Nick a thank you note',
-                  'Schedule a follow up for tomorrow 9am',
-                ]}
-                onChange={(e) => setValue(e.target.value)}
-                onSubmit={async (e) => {
-                  e.preventDefault()
+                disabled={!value.trim() || sending}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-black hover:bg-white/90 disabled:opacity-50 transition-colors"
+                onClick={async () => {
                   const q = value.trim()
-                  if (!q || sending) return
+                  if (!q) return
                   setValue('')
                   setSending(true)
                   await onAsk(q)
                   setSending(false)
                 }}
-              />
+                title="Send"
+                aria-label="Send"
+              >
+                <Send className="size-4" />
+              </button>
             </div>
-            {/* Voice button omitted for now */}
-            <button
-              disabled={!value.trim() || sending}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-md bg-blue-600 hover:bg-blue-500 text-white disabled:opacity-50"
-              onClick={async () => {
-                const q = value.trim()
-                if (!q) return
-                setValue('')
-                setSending(true)
-                await onAsk(q)
-                setSending(false)
-              }}
-              title="Send"
-              aria-label="Send"
-            >
-              <Send className="size-4" />
-            </button>
           </div>
         </div>
       </div>
@@ -2635,9 +2629,13 @@ function ComposeColdEmailModal({
                 try {
                   setLoading(true)
                       const ok = await onSend({ to, subject, body })
-                  if (ok) onClose()
+                  if (ok) {
+                    import('sonner').then(({ toast }) => toast.success('Email sent successfully!'))
+                    onClose()
+                  }
                 } catch (e: any) {
                   setError('Failed to send email')
+                  import('sonner').then(({ toast }) => toast.error('Failed to send email'))
                 } finally {
                   setLoading(false)
                 }
