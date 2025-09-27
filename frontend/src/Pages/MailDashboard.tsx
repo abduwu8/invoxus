@@ -1,58 +1,83 @@
 function NewFeatureModal({ onClose, onTryCold }: { onClose: () => void; onTryCold: () => void }) {
   return (
-    <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white rounded-xl shadow-2xl overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200">
+    <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
+      <div className="w-full max-w-sm bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden">
+        {/* Header */}
+        <div className="px-6 py-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Sparkles className="w-4 h-4 text-blue-600" />
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+                <Sparkles className="w-5 h-5 text-white" />
               </div>
               <div>
-                <div className="text-sm font-semibold text-gray-900">New: Smarter Cold Emails</div>
-                <div className="text-xs text-gray-500">More precise. More customizable. More you.</div>
+                <div className="text-lg font-semibold text-gray-900 dark:text-white">Smarter Cold Emails</div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">AI-powered & personalized</div>
               </div>
             </div>
-            <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors">
-              <X className="w-4 h-4 text-gray-500" />
+            <button 
+              onClick={onClose} 
+              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            >
+              <X className="w-4 h-4 text-gray-500 dark:text-gray-400" />
             </button>
           </div>
         </div>
-        <div className="px-6 py-5">
-          <ul className="space-y-3 text-sm text-gray-600">
-            <li className="flex items-start gap-2">
-              <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-              <span>AI now writes longer, role‑aware drafts that reflect your skills, resume and tone.</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-              <span>New fields: job title, skills, achievements, fit, availability, location and more.</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-              <span>Suggestion engine: type "software developer" and get tailored points instantly.</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-              <span>Playful tone option for fun intros (tl;dr style) while staying professional.</span>
-            </li>
-          </ul>
-          <div className="mt-5 grid grid-cols-1 gap-3">
-            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-              <div className="text-xs font-medium text-gray-500 mb-2">Precision</div>
-              <div className="text-sm text-gray-700">Tone + length controls with strict enforcement for consistent results.</div>
+
+        {/* Content */}
+        <div className="px-6 pb-6">
+          <div className="space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="w-6 h-6 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                <svg className="w-3 h-3 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div>
+                <div className="text-sm font-medium text-gray-900 dark:text-white">Role-aware AI</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">Writes personalized drafts based on your skills</div>
+              </div>
             </div>
-            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-              <div className="text-xs font-medium text-gray-500 mb-2">Personalization</div>
-              <div className="text-sm text-gray-700">Grounded in your resume highlights and portfolio links.</div>
+
+            <div className="flex items-start gap-3">
+              <div className="w-6 h-6 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                <svg className="w-3 h-3 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div>
+                <div className="text-sm font-medium text-gray-900 dark:text-white">Smart suggestions</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">Auto-fills skills, achievements & fit</div>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <div className="w-6 h-6 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                <svg className="w-3 h-3 text-purple-600 dark:text-purple-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div>
+                <div className="text-sm font-medium text-gray-900 dark:text-white">Creative tone</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">Fun TL;DR style that stands out</div>
+              </div>
             </div>
           </div>
-        </div>
-        <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-end gap-3 bg-gray-50">
-          <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">Later</button>
-          <button onClick={onTryCold} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
-            Try new Cold Email
-          </button>
+
+          {/* Action Buttons */}
+          <div className="mt-6 flex gap-3">
+            <button 
+              onClick={onClose} 
+              className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            >
+              Later
+            </button>
+            <button 
+              onClick={onTryCold} 
+              className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg"
+            >
+              Try Now
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -1267,20 +1292,29 @@ export default function MailDashboard() {
             portfolioLinks?: string;
             fitSummary?: string;
             ctaPreference?: string;
-            tone?: 'professional' | 'friendly' | 'direct' | 'curious' | 'playful';
-            desiredLength?: 'short' | 'medium' | 'long';
-            resumeText?: string;
+            tone?: 'professional' | 'tldr';
             availability?: string;
             location?: string;
             lowCost?: boolean;
           }) => {
+            console.log('Frontend sending payload:', payload);
+            console.log('Frontend payload type:', typeof payload);
+            console.log('Frontend payload JSON:', JSON.stringify(payload));
+            
             const r = await fetch(`${API_BASE}/api/cold-email/generate`, {
               method: 'POST',
               credentials: 'include',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(payload),
             })
-            if (!r.ok) throw new Error('Failed to generate')
+            console.log('Response status:', r.status);
+            console.log('Response ok:', r.ok);
+            
+            if (!r.ok) {
+              const errorText = await r.text();
+              console.error('Response error:', errorText);
+              throw new Error(`Failed to generate: ${r.status} ${errorText}`)
+            }
             return (await r.json()) as { to: string; subject: string; body: string; reason?: string }
           }}
           onSend={async (payload: { to: string; subject: string; body: string }) => {
@@ -2367,9 +2401,7 @@ function ComposeColdEmailModal({
       portfolioLinks?: string
       fitSummary?: string
       ctaPreference?: string
-      tone?: 'professional' | 'friendly' | 'direct' | 'curious' | 'playful'
-      desiredLength?: 'short' | 'medium' | 'long'
-      resumeText?: string
+      tone?: 'professional' | 'tldr'
       availability?: string
       location?: string
       lowCost?: boolean
@@ -2387,10 +2419,7 @@ function ComposeColdEmailModal({
   const [portfolioLinks, setPortfolioLinks] = useState('')
   const [fitSummary, setFitSummary] = useState('')
   const [ctaPreference, setCtaPreference] = useState('')
-  const [tone, setTone] = useState<'professional' | 'friendly' | 'direct' | 'curious' | 'playful'>('professional')
-  const [desiredLength, setDesiredLength] = useState<'short' | 'medium' | 'long'>('long')
-  const [resumeText, setResumeText] = useState('')
-  const [resumeName, setResumeName] = useState<string | null>(null)
+  const [tone, setTone] = useState<'professional' | 'tldr'>('professional')
   const [availability, setAvailability] = useState('')
   const [location, setLocation] = useState('')
   const [lowCost, setLowCost] = useState(false)
@@ -2413,7 +2442,7 @@ function ComposeColdEmailModal({
           method: 'POST',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ industry, role, company, resumeText, skills, jobTitle, portfolioLinks }),
+          body: JSON.stringify({ industry, role, company, skills, jobTitle, portfolioLinks }),
           signal: controller.signal,
         })
         if (!r.ok) return
@@ -2423,8 +2452,7 @@ function ComposeColdEmailModal({
           fitSummary?: string
           portfolioLinks?: string
           ctaPreference?: string
-          tone?: 'professional' | 'friendly' | 'direct' | 'curious' | 'playful'
-          desiredLength?: 'short' | 'medium' | 'long'
+          tone?: 'professional' | 'tldr'
           availability?: string
           location?: string
         } = await r.json()
@@ -2437,7 +2465,6 @@ function ComposeColdEmailModal({
         if (s.availability && !availability.trim()) { setAvailability(s.availability); applied = true }
         if (s.location && !location.trim()) { setLocation(s.location); applied = true }
         if (s.tone && tone === 'professional') { setTone(s.tone) }
-        if (s.desiredLength && desiredLength === 'long') { setDesiredLength(s.desiredLength) }
         if (applied) {
           setSuggestionNote('AI suggestions applied')
           setTimeout(() => setSuggestionNote(null), 2500)
@@ -2530,57 +2557,14 @@ function ComposeColdEmailModal({
                   <label className="block text-xs text-neutral-500 mb-1">Tone</label>
                   <select value={tone} onChange={(e) => setTone(e.target.value as any)} className="w-full rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-neutral-700">
                     <option value="professional">Professional</option>
-                    <option value="friendly">Friendly</option>
-                    <option value="direct">Direct</option>
-                    <option value="curious">Curious</option>
-                    <option value="playful">Playful (fun, tl;dr style)</option>
+                    <option value="tldr">TL;DR</option>
                   </select>
                 </div>
-              </div>
-              <div>
-                <label className="block text-xs text-neutral-500 mb-1">Desired length</label>
-                <select value={desiredLength} onChange={(e) => setDesiredLength(e.target.value as any)} className="w-full rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-neutral-700">
-                  <option value="short">Short</option>
-                  <option value="medium">Medium</option>
-                  <option value="long">Long</option>
-                </select>
               </div>
               <label className="flex items-center gap-2 text-xs text-neutral-300 select-none">
                 <input type="checkbox" checked={lowCost} onChange={(e) => setLowCost(e.target.checked)} className="accent-blue-600" />
                 Low cost mode (fewer tokens, faster)
               </label>
-              <div>
-                <label className="block text-xs text-neutral-500 mb-1">Resume (optional)</label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="file"
-                    accept=".txt,.md,.text"
-                    className="block w-full text-xs text-neutral-400 file:mr-3 file:rounded-md file:border file:border-neutral-800 file:bg-neutral-900 file:px-3 file:py-1.5 file:text-neutral-200 hover:file:bg-neutral-800"
-                    onChange={async (e) => {
-                      const f = e.target.files && e.target.files[0]
-                      if (!f) return
-                      setResumeName(f.name)
-                      if (f.type.startsWith('text') || /\.txt$|\.md$|\.text$/i.test(f.name)) {
-                        const txt = await f.text()
-                        setResumeText(txt.slice(0, 12000))
-                      } else {
-                        setResumeText('')
-                        import('sonner').then(({ toast }) => toast.message('Only plain text resumes are read for AI drafting right now.'))
-                      }
-                    }}
-                  />
-                </div>
-                {resumeName ? (
-                  <div className="mt-1 text-[11px] text-neutral-500">{resumeName}{resumeText ? ' • text extracted' : ' • not parsed'}</div>
-                ) : null}
-                <textarea
-                  value={resumeText}
-                  onChange={(e) => setResumeText(e.target.value)}
-                  placeholder="Or paste resume/profile highlights here..."
-                  className="mt-2 min-h-[100px] w-full resize-y rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-neutral-700"
-                />
-                <div className="mt-1 text-[11px] text-neutral-500">AI will use resume highlights to personalize the draft.</div>
-              </div>
               {error ? <div className="text-xs text-red-400">{error}</div> : null}
               <div className="flex items-center gap-2 pt-1">
                 <button
@@ -2602,8 +2586,6 @@ function ComposeColdEmailModal({
                         fitSummary,
                         ctaPreference,
                         tone,
-                        desiredLength,
-                        resumeText,
                         availability,
                         location,
                         lowCost,
@@ -2620,6 +2602,10 @@ function ComposeColdEmailModal({
                       setTimeout(() => {
                         previewRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
                       }, 50)
+                    } catch (e: any) {
+                      console.error('Generate error:', e)
+                      setError(e?.message || 'Failed to generate draft')
+                      import('sonner').then(({ toast }) => toast.error('Failed to generate draft'))
                     } finally {
                       setLoading(false)
                     }
