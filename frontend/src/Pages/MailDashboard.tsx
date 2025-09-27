@@ -2417,6 +2417,7 @@ function ComposeColdEmailModal({
   const [suggestionNote, setSuggestionNote] = useState<string | null>(null)
   const previewRef = useRef<HTMLDivElement | null>(null)
 
+
   // Fetch AI-driven suggestions when job title changes; only fill empty fields
   useEffect(() => {
     const controller = new AbortController()
@@ -2515,7 +2516,7 @@ function ComposeColdEmailModal({
               </div>
               <div>
                 <label className="block text-xs text-neutral-500 mb-1">Portfolio / links</label>
-                <textarea value={portfolioLinks} onChange={(e) => setPortfolioLinks(e.target.value)} className="min-h-[56px] w-full resize-y rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-neutral-700" placeholder="e.g. website, GitHub, LinkedIn, case studies" />
+                <textarea value={portfolioLinks} onChange={(e) => setPortfolioLinks(e.target.value)} className="min-h-[56px] w-full resize-y rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-neutral-700" placeholder="e.g. linkedin.com/in/yourname, github.com/username, website, case studies" />
               </div>
               <div>
                 <label className="block text-xs text-neutral-500 mb-1">Why you’re a fit (optional)</label>
