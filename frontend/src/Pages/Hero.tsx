@@ -15,22 +15,22 @@ export default function Hero({ onLoggedIn }: Props) {
   const slides = useMemo(
     () => [
       {
-        src: new URL('../images/ai coldmail.png', import.meta.url).toString(),
-        alt: 'AI cold email composer',
-        title: 'Write cold emails effortlessly',
-        description: 'Generate tailored cold emails with AI in seconds. Personalize, iterate, and send when ready.',
+        src: new URL('../images/coldemail.png', import.meta.url).toString(),
+        alt: 'AI-powered cold email generation',
+        title: 'AI Cold Email Mastery',
+        description: 'Generate high-converting cold emails with advanced AI. Smart personalization, A/B testing, and automated follow-ups that actually get responses.',
       },
       {
         src: new URL('../images/ai chat.jpg', import.meta.url).toString(),
-        alt: 'AI chat for inbox',
-        title: 'Chat with your inbox',
-        description: 'Summarize threads, triage messages, and reply faster with AI-assisted chat workflows.',
+        alt: 'Intelligent inbox management',
+        title: 'Smart Inbox Intelligence',
+        description: 'AI-powered email triage, instant summaries, and intelligent categorization. Your inbox becomes a productivity powerhouse.',
       },
       {
         src: new URL('../images/chigma.png', import.meta.url).toString(),
-        alt: 'Inbox special features: OTP and AI delete',
-        title: 'Smart inbox: OTP & AI delete',
-        description: 'Instantly spot OTPs when you need them, and let AI suggest safe deletes for clutter — cleaner, faster inbox.',
+        alt: 'Advanced email features and automation',
+        title: 'Next-Gen Email Features',
+        description: 'OTP detection, smart delete suggestions, automated responses, and seamless Gmail integration. Email management reimagined.',
       },
     ],
     []
@@ -244,7 +244,7 @@ export default function Hero({ onLoggedIn }: Props) {
           <div className="pointer-events-none absolute top-[-16px] left-1/2 -translate-x-1/2 w-full h-px bg-neutral-800/80" />
 
           <div
-            className="relative rounded-2xl border border-neutral-800 overflow-hidden bg-neutral-900/40 h-[380px] md:h-[460px]"
+            className="relative rounded-2xl border border-neutral-800 overflow-hidden bg-neutral-900/40 h-[420px] md:h-[520px]"
             onMouseEnter={() => setIsPaused(true)}
             onMouseLeave={() => setIsPaused(false)}
           >
@@ -264,14 +264,14 @@ export default function Hero({ onLoggedIn }: Props) {
 
             {/* Caption with gradient and crossfade */}
             <div className="absolute inset-x-0 bottom-0">
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 md:h-32 bg-gradient-to-t from-black/70 via-black/40 to-transparent" />
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 md:h-40 bg-gradient-to-t from-black via-black/80 to-transparent" />
               <div className="relative p-4 md:p-6">
                 {slides.map((s, idx) => (
                   <div
                     key={s.title}
                     className={`absolute inset-x-0 bottom-0 px-4 md:px-6 pb-4 md:pb-6 transition-opacity duration-500 ease-in-out ${idx === currentSlideIndex ? 'opacity-100' : 'opacity-0'}`}
                   >
-                    <h3 className="text-neutral-100 text-xl md:text-2xl font-semibold">{s.title}</h3>
+                    <h3 className="text-white text-xl md:text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent drop-shadow-lg">{s.title}</h3>
                     <p className="mt-1 text-neutral-300 text-sm md:text-base max-w-3xl">{s.description}</p>
                   </div>
                 ))}
