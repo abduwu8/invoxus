@@ -9,11 +9,10 @@ What you can do faster
 - Find codes instantly: OTPs are grouped in one place when you need them.
 - Organize simply: Lightweight categories and top contacts keep things tidy.
 
-Why people choose Invoxus
+Why to choose Invoxus
 - Time back: Inbox to zero, quickly.
 - Safer automation: Built‑in guardrails so important messages aren’t lost.
-- Private by default: AI features can run with or without Groq; data stays in your session/database.
-
+  
 How it works (at a glance)
 1) Connect your mailbox (Gmail today; Outlook/IMAP coming).
 2) Invoxus analyzes recent mail to surface priorities and suggestions.
