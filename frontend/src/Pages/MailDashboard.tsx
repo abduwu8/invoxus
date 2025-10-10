@@ -22,28 +22,23 @@ function NewFeatureModal({ onClose, onTryCold }: { onClose: () => void; onTryCol
         <div className="px-6 py-6">
           <div className="space-y-4 text-gray-300">
             <div>
+              <div className="text-sm font-medium text-white mb-1">Enhanced TLDR Mode</div>
+              <div className="text-xs text-gray-400">Creative, memorable emails with unique tech metaphors and personality throughout both paragraphs - no more boring intros</div>
+            </div>
+
+            <div>
               <div className="text-sm font-medium text-white mb-1">Optimized Email Structure</div>
               <div className="text-xs text-gray-400">Streamlined to 2 focused paragraphs with strategic bullet points for maximum impact and readability</div>
             </div>
 
             <div>
-              <div className="text-sm font-medium text-white mb-1">Professional Links Integration</div>
-              <div className="text-xs text-gray-400">Clean portfolio showcase with LinkedIn and GitHub links for instant credibility verification</div>
-            </div>
-
-            <div>
               <div className="text-sm font-medium text-white mb-1">Enhanced AI Intelligence</div>
-              <div className="text-xs text-gray-400">Smarter content generation with improved tone matching and personalized messaging strategies</div>
+              <div className="text-xs text-gray-400">Smarter content generation with improved tone matching and completely unique content every time</div>
             </div>
 
             <div>
-              <div className="text-sm font-medium text-white mb-1">Instant Success Feedback</div>
-              <div className="text-xs text-gray-400">Real-time notifications confirm successful email delivery, keeping you informed every step of the way</div>
-            </div>
-
-            <div>
-              <div className="text-sm font-medium text-white mb-1">Professional Presentation</div>
-              <div className="text-xs text-gray-400">Refined formatting ensures your cold emails stand out with executive-level polish and attention to detail</div>
+              <div className="text-sm font-medium text-white mb-1">Resume Attachment Support</div>
+              <div className="text-xs text-gray-400">Upload and attach your resume (PDF, DOC, DOCX) directly to cold emails for complete professional presentation</div>
             </div>
           </div>
 
@@ -68,7 +63,7 @@ function NewFeatureModal({ onClose, onTryCold }: { onClose: () => void; onTryCol
   )
 }
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Star, Reply as LucideReply, Trash2, Wand2, Send, X, Plus, Inbox, MessageSquare, Sparkles, CheckSquare, KeyRound, LogOut, Menu, ArrowLeft, ThumbsUp, ThumbsDown, Paperclip } from 'lucide-react'
+import { Star, Reply as LucideReply, Trash2, Wand2, Send, X, Plus, Inbox, MessageSquare, Sparkles, CheckSquare, KeyRound, LogOut, Menu, ArrowLeft, ThumbsUp, ThumbsDown, Paperclip, Check } from 'lucide-react'
 import { PlaceholdersAndVanishInput } from '../components/ui/reveal'
 import { LoaderOne } from '../components/loader'
 // Emoji picker removed for now
@@ -456,6 +451,12 @@ export default function MailDashboard() {
 
   return (
     <div className="h-screen w-full overflow-x-hidden bg-neutral-950 text-neutral-100 no-anim">
+      {/* Authentication Loading Overlay */}
+      {!profile && (
+        <div className="fixed inset-0 bg-neutral-950 z-50 flex items-center justify-center">
+          <LoaderOne />
+        </div>
+      )}
       <div className="flex h-full overflow-x-hidden">
         {/* Mobile slide-over sidebar */}
         {sidebarOpen ? (
@@ -1271,24 +1272,44 @@ export default function MailDashboard() {
             role?: string;
             company?: string;
             jobTitle?: string;
-            achievements?: string;
+            projects?: string;
+            education?: string;
             portfolioLinks?: string;
             fitSummary?: string;
             ctaPreference?: string;
             tone?: 'professional' | 'tldr';
+            experienceLevel?: 'fresher' | 'intern';
             availability?: string;
             location?: string;
             lowCost?: boolean;
+            resumeFile?: File;
           }) => {
             console.log('Frontend sending payload:', payload);
             console.log('Frontend payload type:', typeof payload);
-            console.log('Frontend payload JSON:', JSON.stringify(payload));
+            
+            // Create FormData for file upload
+            const formData = new FormData();
+            formData.append('to', payload.to);
+            formData.append('skills', payload.skills);
+            if (payload.role) formData.append('role', payload.role);
+            if (payload.company) formData.append('company', payload.company);
+            if (payload.jobTitle) formData.append('jobTitle', payload.jobTitle);
+            if (payload.projects) formData.append('projects', payload.projects);
+            if (payload.education) formData.append('education', payload.education);
+            if (payload.portfolioLinks) formData.append('portfolioLinks', payload.portfolioLinks);
+            if (payload.fitSummary) formData.append('fitSummary', payload.fitSummary);
+            if (payload.ctaPreference) formData.append('ctaPreference', payload.ctaPreference);
+            if (payload.tone) formData.append('tone', payload.tone);
+            if (payload.experienceLevel) formData.append('experienceLevel', payload.experienceLevel);
+            if (payload.availability) formData.append('availability', payload.availability);
+            if (payload.location) formData.append('location', payload.location);
+            if (payload.lowCost) formData.append('lowCost', payload.lowCost.toString());
+            if (payload.resumeFile) formData.append('resumeFile', payload.resumeFile);
             
             const r = await fetch(`${API_BASE}/api/cold-email/generate`, {
               method: 'POST',
               credentials: 'include',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload),
+              body: formData,
             })
             console.log('Response status:', r.status);
             console.log('Response ok:', r.ok);
@@ -1300,12 +1321,20 @@ export default function MailDashboard() {
             }
             return (await r.json()) as { to: string; subject: string; body: string; reason?: string }
           }}
-          onSend={async (payload: { to: string; subject: string; body: string }) => {
+          onSend={async (payload: { to: string; subject: string; body: string; resumeFile?: File }) => {
+            // Create FormData for file upload
+            const formData = new FormData();
+            formData.append('to', payload.to);
+            formData.append('subject', payload.subject);
+            formData.append('body', payload.body);
+            if (payload.resumeFile) {
+              formData.append('resumeFile', payload.resumeFile);
+            }
+            
             const r = await fetch(`${API_BASE}/api/cold-email/send`, {
               method: 'POST',
               credentials: 'include',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload),
+              body: formData,
             })
             if (!r.ok) throw new Error('Failed to send')
             return true
@@ -2378,38 +2407,46 @@ function ComposeColdEmailModal({
       company?: string
       industry?: string
       jobTitle?: string
-      achievements?: string
+      projects?: string
+      education?: string
       portfolioLinks?: string
       fitSummary?: string
       ctaPreference?: string
       tone?: 'professional' | 'tldr'
+      experienceLevel?: 'fresher' | 'intern'
       availability?: string
       location?: string
       lowCost?: boolean
+      resumeFile?: File
     }
   ) => Promise<{ to: string; subject: string; body: string; reason?: string }>
-  onSend: (p: { to: string; subject: string; body: string }) => Promise<boolean>
+  onSend: (p: { to: string; subject: string; body: string; resumeFile?: File }) => Promise<boolean>
 }) {
   const [to, setTo] = useState('')
   const [role, setRole] = useState('HR')
   const [company, setCompany] = useState('')
   const [skills, setSkills] = useState('')
   const [jobTitle, setJobTitle] = useState('')
-  const [achievements, setAchievements] = useState('')
+  const [projects, setProjects] = useState('')
+  const [education, setEducation] = useState('')
   const [portfolioLinks, setPortfolioLinks] = useState('')
   const [fitSummary, setFitSummary] = useState('')
   const [ctaPreference, setCtaPreference] = useState('')
   const [tone, setTone] = useState<'professional' | 'tldr'>('professional')
+  const [experienceLevel, setExperienceLevel] = useState<'fresher' | 'intern'>('fresher')
   const [availability, setAvailability] = useState('')
   const [location, setLocation] = useState('')
   const [lowCost, setLowCost] = useState(false)
+  const [resumeFile, setResumeFile] = useState<File | null>(null)
   const [subject, setSubject] = useState('')
   const [body, setBody] = useState('')
   const [loading, setLoading] = useState(false)
+  const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [reason, setReason] = useState<string | null>(null)
   const [suggestionNote, setSuggestionNote] = useState<string | null>(null)
   const previewRef = useRef<HTMLDivElement | null>(null)
+  const resumeInputRef = useRef<HTMLInputElement | null>(null)
 
 
   // Fetch AI-driven suggestions when job title changes; only fill empty fields
@@ -2422,29 +2459,33 @@ function ComposeColdEmailModal({
           method: 'POST',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ industry: '', role, company, skills, jobTitle, portfolioLinks }),
+          body: JSON.stringify({ industry: '', role, company, skills, jobTitle, portfolioLinks, experienceLevel }),
           signal: controller.signal,
         })
         if (!r.ok) return
         const s: {
           skills?: string
-          achievements?: string
+          projects?: string
+          education?: string
           fitSummary?: string
           portfolioLinks?: string
           ctaPreference?: string
           tone?: 'professional' | 'tldr'
+          experienceLevel?: 'fresher' | 'intern'
           availability?: string
           location?: string
         } = await r.json()
         let applied = false
         if (s.skills && !skills.trim()) { setSkills(s.skills); applied = true }
-        if (s.achievements && !achievements.trim()) { setAchievements(s.achievements); applied = true }
+        if (s.projects && !projects.trim()) { setProjects(s.projects); applied = true }
+        if (s.education && !education.trim()) { setEducation(s.education); applied = true }
         if (s.fitSummary && !fitSummary.trim()) { setFitSummary(s.fitSummary); applied = true }
         if (s.portfolioLinks && !portfolioLinks.trim()) { setPortfolioLinks(s.portfolioLinks); applied = true }
         if (s.ctaPreference && !ctaPreference.trim()) { setCtaPreference(s.ctaPreference); applied = true }
         if (s.availability && !availability.trim()) { setAvailability(s.availability); applied = true }
         if (s.location && !location.trim()) { setLocation(s.location); applied = true }
         if (s.tone && tone === 'professional') { setTone(s.tone) }
+        if (s.experienceLevel && experienceLevel === 'fresher') { setExperienceLevel(s.experienceLevel) }
         if (applied) {
           setSuggestionNote('✨ AI suggestions applied based on job title')
           setTimeout(() => setSuggestionNote(null), 2500)
@@ -2459,13 +2500,38 @@ function ComposeColdEmailModal({
   const previewReady = !!subject || !!body
   return (
     <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-stretch md:items-start justify-center">
-      <div className="mt-0 md:mt-10 w-full md:w-auto h-full md:h-auto md:max-w-5xl lg:max-w-6xl max-w-[100vw] rounded-none md:rounded-2xl border border-neutral-800 bg-neutral-950 shadow-xl overflow-hidden flex flex-col">
+      <div className="mt-0 md:mt-10 w-full md:w-auto h-full md:h-auto md:max-w-5xl lg:max-w-6xl max-w-[100vw] rounded-none md:rounded-2xl border border-neutral-800 bg-neutral-950 shadow-xl overflow-hidden flex flex-col relative">
+        {/* Loading Overlay */}
+        {loading && (
+          <div className="absolute inset-0 bg-neutral-950/95 backdrop-blur-sm z-10 flex items-center justify-center">
+            <div className="text-center flex flex-col items-center justify-center">
+              <div className="mb-6">
+                <LoaderOne />
+              </div>
+              <div className="text-sm text-neutral-300">Crafting your personalized outreach...</div>
+              <div className="text-xs text-neutral-500 mt-1">Our AI is tailoring your message for maximum impact</div>
+            </div>
+          </div>
+        )}
+        
+        {/* Sending Overlay */}
+        {sending && (
+          <div className="absolute inset-0 bg-neutral-950/95 backdrop-blur-sm z-10 flex items-center justify-center">
+            <div className="text-center flex flex-col items-center justify-center">
+              <div className="mb-6">
+                <LoaderOne />
+              </div>
+              <div className="text-sm text-neutral-300">Sending your email...</div>
+              <div className="text-xs text-neutral-500 mt-1">Please wait while we deliver your message</div>
+            </div>
+          </div>
+        )}
         <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-800">
           <div className="flex items-center gap-2">
             <Sparkles className="size-4 text-violet-400" />
             <div>
               <div className="text-sm font-medium text-neutral-200">Cold email</div>
-              <div className="text-xs text-neutral-500">Generate a concise, personalized outreach • 10/day limit</div>
+              <div className="text-xs text-neutral-500">Generate networking outreach to talent acquisition teams • 10/day limit</div>
             </div>
           </div>
           <button className="size-8 grid place-items-center rounded hover:bg-neutral-900" onClick={onClose}>
@@ -2505,12 +2571,73 @@ function ComposeColdEmailModal({
                 <textarea value={skills} onChange={(e) => setSkills(e.target.value)} className="min-h-[72px] w-full resize-y rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-neutral-700" placeholder="e.g. React, TypeScript, Node, Tailwind, testing" />
               </div>
               <div>
-                <label className="block text-xs text-neutral-500 mb-1">Notable achievements</label>
-                <textarea value={achievements} onChange={(e) => setAchievements(e.target.value)} className="min-h-[72px] w-full resize-y rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-neutral-700" placeholder="e.g. grew signups 22%, led redesign, shipped X feature" />
+                <label className="block text-xs text-neutral-500 mb-1">Notable projects</label>
+                <textarea value={projects} onChange={(e) => setProjects(e.target.value)} className="min-h-[72px] w-full resize-y rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-neutral-700" placeholder="e.g. E-commerce platform (React, Node.js) - increased sales 30%, Mobile app (React Native) - 10k+ downloads" />
+              </div>
+              <div>
+                <label className="block text-xs text-neutral-500 mb-1">Education</label>
+                <textarea value={education} onChange={(e) => setEducation(e.target.value)} className="min-h-[56px] w-full resize-y rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-neutral-700" placeholder="e.g. B.S. Computer Science, Stanford University, 2020" />
               </div>
               <div>
                 <label className="block text-xs text-neutral-500 mb-1">Portfolio / links</label>
                 <textarea value={portfolioLinks} onChange={(e) => setPortfolioLinks(e.target.value)} className="min-h-[56px] w-full resize-y rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-neutral-700" placeholder="e.g. linkedin.com/in/yourname, github.com/username, website, case studies" />
+              </div>
+              <div>
+                <label className="block text-xs text-neutral-500 mb-1">Resume (optional)</label>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => resumeInputRef.current?.click()}
+                    className="w-full rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm text-left hover:bg-neutral-800 transition-colors flex items-center justify-between"
+                  >
+                    <span className={resumeFile ? 'text-neutral-200' : 'text-neutral-500'}>
+                      {resumeFile ? resumeFile.name : 'Click to upload resume (PDF, DOC, DOCX)'}
+                    </span>
+                    <Paperclip className="size-4 text-neutral-400" />
+                  </button>
+                  <input
+                    ref={resumeInputRef}
+                    type="file"
+                    accept=".pdf,.doc,.docx"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) {
+                        // Validate file size (max 5MB)
+                        if (file.size > 5 * 1024 * 1024) {
+                          setError('Resume file too large. Please choose a file under 5MB.')
+                          return
+                        }
+                        // Validate file type
+                        const validTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
+                        if (!validTypes.includes(file.type)) {
+                          setError('Please upload a PDF, DOC, or DOCX file.')
+                          return
+                        }
+                        setResumeFile(file)
+                        setError(null)
+                      }
+                    }}
+                    className="hidden"
+                  />
+                  {resumeFile && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setResumeFile(null)
+                        if (resumeInputRef.current) resumeInputRef.current.value = ''
+                      }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-red-400 hover:text-red-300"
+                    >
+                      <X className="size-3" />
+                    </button>
+                  )}
+                </div>
+                {resumeFile && (
+                  <div className="mt-1 text-[11px] text-green-400 flex items-center gap-1">
+                    <Check className="size-3" />
+                    Resume attached - will be included in email
+                  </div>
+                )}
               </div>
               <div>
                 <label className="block text-xs text-neutral-500 mb-1">Why you’re a fit (optional)</label>
@@ -2537,9 +2664,16 @@ function ComposeColdEmailModal({
                   </select>
                 </div>
               </div>
+              <div>
+                <label className="block text-xs text-neutral-500 mb-1">Experience Level</label>
+                <select value={experienceLevel} onChange={(e) => setExperienceLevel(e.target.value as any)} className="w-full rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-neutral-700">
+                  <option value="fresher">Fresher (New Graduate)</option>
+                  <option value="intern">Intern (Seeking Internship)</option>
+                </select>
+              </div>
               <label className="flex items-center gap-2 text-xs text-neutral-300 select-none">
                 <input type="checkbox" checked={lowCost} onChange={(e) => setLowCost(e.target.checked)} className="accent-blue-600" />
-                Low cost mode (fewer tokens, faster)
+                High quality mode (more tokens, better output)
               </label>
               {error ? <div className="text-xs text-red-400">{error}</div> : null}
               <div className="flex items-center gap-2 pt-1">
@@ -2556,14 +2690,17 @@ function ComposeColdEmailModal({
                         role,
                         company,
                         jobTitle,
-                        achievements,
+                        projects,
+                        education,
                         portfolioLinks,
                         fitSummary,
                         ctaPreference,
                         tone,
+                        experienceLevel,
                         availability,
                         location,
                         lowCost,
+                        resumeFile: resumeFile || undefined,
                       })
                       if (d.to && !to) setTo(d.to)
                       const nextSubject = d.subject || subject || ''
@@ -2623,12 +2760,12 @@ function ComposeColdEmailModal({
               <div className="flex items-center justify-end gap-2 pt-5">
             <button className="rounded-md border border-neutral-800 px-3 py-1.5 text-sm hover:bg-neutral-900" onClick={onClose}>Close</button>
             <button
-              disabled={!to.trim() || toInvalid || !subject.trim() || !body.trim()}
+              disabled={!to.trim() || toInvalid || !subject.trim() || !body.trim() || sending}
               className="inline-flex items-center gap-2 rounded-md bg-blue-600 hover:bg-blue-500 disabled:opacity-50 px-3 py-1.5 text-sm"
               onClick={async () => {
                 try {
-                  setLoading(true)
-                      const ok = await onSend({ to, subject, body })
+                  setSending(true)
+                  const ok = await onSend({ to, subject, body, resumeFile: resumeFile || undefined })
                   if (ok) {
                     import('sonner').then(({ toast }) => toast.success('Email sent successfully!'))
                     onClose()
@@ -2637,12 +2774,12 @@ function ComposeColdEmailModal({
                   setError('Failed to send email')
                   import('sonner').then(({ toast }) => toast.error('Failed to send email'))
                 } finally {
-                  setLoading(false)
+                  setSending(false)
                 }
               }}
             >
               <Send className="size-4" />
-              Send
+              {sending ? 'Sending...' : 'Send'}
             </button>
           </div>
         </div>

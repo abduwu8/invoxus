@@ -1,8 +1,31 @@
 const express = require('express');
 const { google } = require('googleapis');
 const Groq = require('groq-sdk');
+const multer = require('multer');
 
 const router = express.Router();
+
+// Configure multer for file uploads
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    // Accept only PDF, DOC, and DOCX files
+    const allowedTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only PDF, DOC, and DOCX files are allowed'), false);
+    }
+  }
+});
 
 // Middleware to handle JSON parsing errors
 router.use((err, req, res, next) => {
@@ -88,7 +111,7 @@ REQUIREMENTS:
 - EXACTLY 2 paragraphs, 120-160 words total (be concise!)
 - Start with appropriate salutation (Dear [Name/Team], Hi [Name], etc.)
 - Paragraph 1: Start with an innovative, fun opener like "TL;DR: I'm the developer your team didn't know they needed" or "TL;DR: Ready to turn your tech stack into a powerhouse?" - be creative and memorable. Introduce yourself and the role. Keep it brief and punchy.
-- Paragraph 2: Showcase your skills, achievements, and relevant experience using bullet points for key highlights. Include specific examples and metrics. End with a creative call-to-action with personality. Use tech metaphors and show enthusiasm. Be direct and to the point.
+- Paragraph 2: Showcase your skills, projects, and relevant experience using bullet points for key highlights. Include specific examples and metrics. End with a creative call-to-action with personality. Use tech metaphors and show enthusiasm. Be direct and to the point.
 - After the second paragraph, include a clean links section followed by LinkedIn and GitHub links (use actual URLs from portfolioLinks if provided, otherwise use placeholder URLs)
 - End with proper email closing (Best regards, Sincerely, etc.) and signature placeholder
 - Be innovative, use tech metaphors, show personality while staying professional. Make HR think "this person is creative and would bring fresh energy to our team". Use phrases like "code wizard", "bug slayer", "performance optimizer", or creative analogies
@@ -237,55 +260,65 @@ async function aiComposeStrict(groq, {
   company,
   jobTitle,
   skillsForPrompt,
-  achievements,
+  projects,
+  education,
   portfolioLinks,
   fitSummary,
   ctaPreference,
   tone,
-  resumeText,
+  experienceLevel,
+  hasResume = false,
+  resumeFileName = '',
   availability,
   location,
   purpose = 'compose',
   opts = {}
 }) {
 
-  const composePrompt = `Write a unique, creative job application email. Return ONLY valid JSON with these exact fields: {"subject","body","reason"}.
+  const composePrompt = `Write a cold outreach email to talent acquisition teams. Return ONLY valid JSON: {"subject","body","reason"}.
 
 CONTEXT:
-Role: ${role}
-Company: ${company || 'a company'}
-Job: ${jobTitle || 'a position'}
-Skills: ${skillsForPrompt}
-Achievements: ${String(achievements).trim().slice(0, 200) || 'relevant experience'}
-Fit: ${String(fitSummary).trim().slice(0, 150) || 'strong background'}
-Portfolio: ${String(portfolioLinks).trim().slice(0, 100) || 'LinkedIn profile and work samples'}
-Tone: ${tone}
-Availability: ${availability || 'flexible'}
-Location: ${location || 'remote/onsite'}
+Role: ${role} | Company: ${company || 'a company'} | Job: ${jobTitle || 'a position'}
+Skills: ${skillsForPrompt} | Projects: ${String(projects).trim().slice(0, 200) || 'relevant project experience'}
+Education: ${String(education).trim().slice(0, 150) || 'relevant educational background'}
+Resume: ${hasResume ? `Attached (${resumeFileName})` : 'Not attached'}
+Tone: ${tone} | Experience: ${experienceLevel} | Availability: ${availability || 'flexible'}
 
 REQUIREMENTS:
-- Format as a proper email with salutation and closing
-- EXACTLY 2 paragraphs, 120-160 words total (be concise!)
-- Start with appropriate salutation (Dear [Name/Team], Hi [Name], etc.)
-- Paragraph 1: ${tone === 'tldr' ? `Start with a creative, unique opener. Be innovative and memorable. Use fresh language and avoid clichés. Introduce yourself and the role with personality. Keep it brief and punchy.` : 'Professional introduction with your background and interest in the role. Be specific and engaging. Keep it concise.'}
-- Paragraph 2: Showcase your skills, achievements, and relevant experience using bullet points for key highlights. Include specific examples and metrics. Make it personal and compelling. ${tone === 'tldr' ? 'End with a creative call-to-action with personality. Use fresh metaphors and show genuine enthusiasm. Be memorable and engaging. Keep it short and impactful.' : 'End with a professional call-to-action with clear next steps and availability. Be confident and specific. Keep it brief.'}
-- After the second paragraph, include a clean links section with the exact format: "You can view my portfolio and experience here:" followed by LinkedIn and GitHub links (use actual URLs from portfolioLinks if provided, otherwise use placeholder URLs)
-- End with proper email closing (Best regards, Sincerely, etc.) and signature placeholder
+- Proper email format with salutation, 2 paragraphs (120-160 words), links section, closing
+- Include ALL provided context information (skills, projects, education, availability, location)
+- Education MUST be included if provided in context
+- If resume is attached, MUST mention it in the email body (e.g., "I've attached my resume for your review" or "Please find my resume attached")
 
-CREATIVITY RULES:
-- ${tone === 'tldr' ? 'Be completely innovative, creative, and unique every time. Invent your own fresh language, metaphors, and approaches. Show personality and make HR think "this person is creative and would bring fresh energy". Never use clichés or common phrases.' : 'Be results-focused, confident, and professional. Use specific examples and clear value propositions. Be authentic and genuine.'}
-- NEVER repeat the same phrases, metaphors, structures, or approaches from any previous emails
-- Create completely original content every single time - no templates or patterns
-- Invent fresh language, unique metaphors, and creative approaches
-- Make each email feel completely fresh, unique, and personally crafted
-- Use varied vocabulary, sentence structures, and writing styles
-- Be authentic, genuine, and creative in your approach
-- Think outside the box and surprise the reader with originality
+APPROACH:
+- This is NETWORKING, not job application
+- Start with networking language: "I've been following", "I wanted to connect", "I noticed your company"
+- NEVER use: "I'm applying for", "I'm interested in applying", "I'm thrilled to apply"
+- ALWAYS generate completely unique content - never repeat phrases, openers, or structures
 
-CRITICAL: Return ONLY valid JSON, no other text, no code blocks, no explanations:
+${experienceLevel === 'intern' ? 
+  'INTERN: Emphasize eagerness to learn, academic projects, enthusiasm for gaining experience. Use language like "I\'m excited to learn", "I\'m eager to contribute".' :
+  'FRESHER: Emphasize recent graduation, academic excellence, readiness to contribute. Use language like "I\'m ready to contribute", "I\'m confident in my ability".'}
+
+${tone === 'tldr' ? 
+  'TLDR: Generate everything in TLDR style - be innovative, fun, and memorable throughout BOTH paragraphs while staying professional. Use creative tech metaphors, show personality, and make the email stand out. Start with a unique, creative opener like "TL;DR: I\'m the developer your team didn\'t know they needed" or "TL;DR: Ready to turn your tech stack into a powerhouse?" - be creative and memorable. In BOTH paragraphs, use phrases like "code wizard", "bug slayer", "performance optimizer", creative analogies, and tech metaphors. Use bullet points whenever necessary to highlight key skills and achievements. Make HR think "this person is creative and would bring fresh energy to our team". NEVER use the same opener twice - always create something completely new and unique.' :
+  'PROFESSIONAL: Generate everything in professional style - be results-focused, confident, specific. Use clear value propositions and bullet points whenever necessary to highlight key skills and achievements.'}
+
+EXAMPLES:
+- Opener: "I've been following [Company]'s work in [industry] and wanted to connect with your talent team."
+- Education: "• B.S. Computer Science, Stanford University, 2020" or "As a Computer Science graduate from Stanford..."
+- Resume: "I've attached my resume for your review" or "Please find my resume attached for your consideration"
+- Links: "You can view my portfolio and experience here: [LinkedIn] [GitHub]"
+
+CRITICAL FOR TLDR TONE:
+- First paragraph: Start with creative TL;DR opener, maintain fun tech metaphors throughout
+- Second paragraph: Continue with creative language, tech analogies, and personality - don't fall back to boring professional tone
+- Both paragraphs should feel cohesive with the same creative energy
+
+Return ONLY this JSON format:
 {
   "subject": "Email subject (max 70 chars)",
-  "body": "Proper email format with salutation, 2 paragraphs with bullet points (120-160 words), links section, and closing",
+  "body": "Complete email with salutation, 2 paragraphs with bullet points, links section, closing",
   "reason": "Brief approach explanation"
 }`;
 
@@ -304,24 +337,28 @@ CRITICAL: Return ONLY valid JSON, no other text, no code blocks, no explanations
         messages: [
           { 
             role: 'system', 
-            content: `You are a professional email writer with a creative edge. You MUST return valid JSON with subject, body, and reason fields. Never return empty responses, code blocks, or explanations. Only return the JSON object.
-            
-            CRITICAL: The email body MUST be formatted as a proper email with:
-            - Appropriate salutation (Dear [Name/Team], Hi [Name], etc.)
-            - Exactly 2 well-structured paragraphs (120-160 words total)
-            - Use bullet points in the second paragraph to highlight key skills, achievements, and experience
-            - After the second paragraph, include a clean links section: "You can view my portfolio and experience here:" followed by LinkedIn and GitHub links
-            - Proper email closing (Best regards, Sincerely, etc.)
-            - Signature placeholder ([Your Name])
-            
-            UNIQUENESS REQUIREMENT: Every email must be completely unique and different from previous ones. Never repeat phrases, structures, or approaches. Be creative and innovative every single time.
-            
-            For TLDR tone: Be innovative, fun, and memorable while staying professional. Use creative tech metaphors, show personality, and make the email stand out. Think like a creative developer who knows how to make an impression. Vary your language, metaphors, and approach every time.` 
+            content: `You are a cold email writer for talent acquisition outreach. Return ONLY valid JSON with subject, body, and reason fields.
+
+PURPOSE: NETWORKING, not job applications. Position sender as valuable to know.
+
+FORMAT: Proper email with salutation, 2 paragraphs (120-160 words), bullet points, links section, closing.
+
+REQUIREMENTS:
+- Include ALL provided context (skills, projects, education, availability, location)
+- Education MUST be included if provided
+- If resume is attached, MUST mention it in the email body (e.g., "I've attached my resume for your review")
+- Start with networking language: "I've been following", "I wanted to connect"
+- NEVER use: "I'm applying for", "I'm interested in applying", "I'm thrilled to apply"
+- Be unique and creative every time - NEVER repeat the same opener or phrases
+
+TLDR tone: Generate everything in TLDR style - be innovative, fun, and memorable throughout BOTH paragraphs while staying professional. Use creative tech metaphors, show personality, and make the email stand out. Start with a unique, creative opener like "TL;DR: I'm the developer your team didn't know they needed" or "TL;DR: Ready to turn your tech stack into a powerhouse?" - be creative and memorable. In BOTH paragraphs, use phrases like "code wizard", "bug slayer", "performance optimizer", creative analogies, and tech metaphors. Use bullet points whenever necessary to highlight key skills and achievements. Make HR think "this person is creative and would bring fresh energy to our team". NEVER use the same opener twice - always create something completely new and unique.
+
+PROFESSIONAL tone: Generate everything in professional style - be results-focused, confident, specific. Use bullet points whenever necessary to highlight key skills and achievements.` 
           },
           { role: 'user', content: composePrompt },
         ],
-        temperature: typeof opts.temperature === 'number' ? opts.temperature : (tone === 'tldr' ? 1.0 : 0.6),
-        max_tokens: typeof opts.maxTokens === 'number' ? opts.maxTokens : 800,
+        temperature: typeof opts.temperature === 'number' ? opts.temperature : (tone === 'tldr' ? 0.7 : 0.6),
+        max_tokens: typeof opts.maxTokens === 'number' ? opts.maxTokens : (tone === 'tldr' ? 600 : 800),
       });
       
       const text = resp?.choices?.[0]?.message?.content || '';
@@ -357,7 +394,7 @@ CRITICAL: Return ONLY valid JSON, no other text, no code blocks, no explanations
 }
 
 
-router.post('/generate', async (req, res) => {
+router.post('/generate', upload.single('resumeFile'), async (req, res) => {
   try {
     // Simple rate limiting for startup phase - COMMENTED OUT FOR TESTING
     // const sessionKey = 'cold_email_count_' + new Date().toDateString();
@@ -372,8 +409,9 @@ router.post('/generate', async (req, res) => {
     //   });
     // }
 
-    // Ensure req.body exists and is an object
+    // Handle both JSON and FormData
     const body = req.body || {};
+    const resumeFile = req.file;
 
     const {
       to = '',
@@ -381,15 +419,24 @@ router.post('/generate', async (req, res) => {
       role = 'HR',
       company = '',
       jobTitle = '',
-      achievements = '',
+      projects = '',
+      education = '',
       portfolioLinks = '',
       fitSummary = '',
       ctaPreference = '',
       tone = 'professional',
+      experienceLevel = 'fresher',
       availability = '',
       location = '',
       lowCost = false,
     } = body;
+
+    // Process resume file if provided (only once, lightweight)
+    const hasResume = !!resumeFile;
+    const resumeFileName = resumeFile ? resumeFile.originalname : '';
+    if (resumeFile) {
+      console.log('Resume file received:', resumeFile.originalname, 'Size:', resumeFile.size);
+    }
 
 
     const skillsList = String(skills)
@@ -437,8 +484,8 @@ router.post('/generate', async (req, res) => {
       throw new Error('All AI models are currently unavailable. Please try again in a few moments.');
     }
     const lengthBounds = [120, 160];
-    const maxTokens = lowCost ? 600 : 800; // Increased significantly for proper email generation
-    const temperature = lowCost ? 0.2 : (tone === 'tldr' ? 1.0 : 0.6); // Maximum creativity for TLDR
+    const maxTokens = lowCost ? 1000 : (tone === 'tldr' ? 600 : 800); // High cost mode: more tokens, TLDR optimized
+    const temperature = lowCost ? 0.8 : (tone === 'tldr' ? 0.7 : 0.6); // Optimized temperatures for each tone
 
     // First compose pass (AI only) - enhanced retry logic
     let draft = null;
@@ -453,13 +500,17 @@ router.post('/generate', async (req, res) => {
           company,
           jobTitle,
           skillsForPrompt,
-          achievements,
+          projects,
+          education,
           portfolioLinks,
           fitSummary,
           ctaPreference,
           tone,
+          experienceLevel,
           availability,
           location,
+          hasResume,
+          resumeFileName,
           purpose: 'compose',
           opts: { maxTokens, temperature }
         });
@@ -505,15 +556,19 @@ router.post('/generate', async (req, res) => {
           company,
           jobTitle,
           skillsForPrompt,
-          achievements,
+          projects,
+          education,
           portfolioLinks,
           fitSummary,
           ctaPreference,
           tone,
+          experienceLevel,
+          hasResume: false, // Skip resume for refinement to speed up
+          resumeFileName: '',
           availability,
           location,
           purpose: 'refine',
-          opts: { maxTokens: maxTokens + 200, temperature: tone === 'tldr' ? 1.0 : temperature + 0.2 }
+          opts: { maxTokens: maxTokens + 200, temperature: tone === 'tldr' ? 0.7 : temperature + 0.2 }
         });
         
         if (refine && refine.subject && refine.body && refine.subject.trim() !== '' && 
@@ -536,15 +591,19 @@ router.post('/generate', async (req, res) => {
           company,
           jobTitle,
           skillsForPrompt,
-          achievements,
+          projects,
+          education,
           portfolioLinks,
           fitSummary,
           ctaPreference,
           tone,
+          experienceLevel,
+          hasResume, // Include resume for final attempt
+          resumeFileName,
           availability,
           location,
           purpose: 'final_attempt',
-          opts: { maxTokens: 1000, temperature: tone === 'tldr' ? 1.0 : 0.8 }
+          opts: { maxTokens: 1000, temperature: tone === 'tldr' ? 0.7 : 0.8 }
         });
         
         if (finalAttempt && finalAttempt.subject && finalAttempt.body && 
@@ -606,7 +665,9 @@ router.post('/suggest', async (req, res) => {
       company = '',
       skills = '',
       jobTitle = '',
+      education = '',
       portfolioLinks = '',
+      experienceLevel = 'fresher',
     } = req.body || {};
 
     const groqApiKey = process.env.GROQ_API_KEY;
@@ -614,7 +675,7 @@ router.post('/suggest', async (req, res) => {
     if (!groqApiKey) {
       return res.status(200).json({
         skills: skills || '',
-        achievements: '',
+        projects: '',
         fitSummary: '',
         portfolioLinks: portfolioLinks || '',
         ctaPreference: '',
@@ -627,24 +688,24 @@ router.post('/suggest', async (req, res) => {
     const groq = new Groq({ apiKey: groqApiKey });
     const model = process.env.GROQ_MODEL || 'llama-3.1-8b-instant';
     
-    const prompt = `You are a career advisor helping someone write a job application email.
+    const prompt = `Suggest improvements for a networking email to talent acquisition teams.
 
-CONTEXT:
-- Role: ${String(role).trim().slice(0, 30) || 'HR'}
-- Company: ${String(company).trim().slice(0, 50) || 'a company'}
-- Current Skills: ${String(skills).trim().slice(0, 100) || 'various skills'}
-- Job Title: ${String(jobTitle).trim().slice(0, 50) || 'a position'}
+CONTEXT: Role: ${String(role).trim().slice(0, 30) || 'HR'} | Company: ${String(company).trim().slice(0, 50) || 'a company'} | Job: ${String(jobTitle).trim().slice(0, 50) || 'a position'} | Skills: ${String(skills).trim().slice(0, 100) || 'various skills'} | Education: ${String(education).trim().slice(0, 100) || 'relevant educational background'} | Experience: ${experienceLevel}
 
-TASK: Based on the job title, suggest relevant improvements for a job application email.
+${experienceLevel === 'intern' ? 
+  'INTERN: Focus on learning opportunities, academic projects, eagerness to contribute.' :
+  'FRESHER: Focus on recent graduation, academic excellence, readiness to contribute.'}
 
-Return ONLY valid JSON in this exact format:
+Return ONLY this JSON:
 {
   "skills": "refined, relevant skills list",
-  "achievements": "1-3 quantified achievements",
+  "projects": "1-3 notable projects with brief descriptions", 
+  "education": "relevant educational background and qualifications",
   "fitSummary": "1 sentence explaining why you're a good fit",
   "portfolioLinks": "LinkedIn profile and relevant portfolio or work samples",
   "ctaPreference": "suggested call-to-action",
   "tone": "professional",
+  "experienceLevel": "${experienceLevel}",
   "availability": "availability status",
   "location": "location preference"
 }`;
@@ -670,11 +731,13 @@ Return ONLY valid JSON in this exact format:
     
     const out = {
       skills: String(suggestions.skills || skills || ''),
-      achievements: String(suggestions.achievements || ''),
+      projects: String(suggestions.projects || ''),
+      education: String(suggestions.education || education || ''),
       fitSummary: String(suggestions.fitSummary || ''),
       portfolioLinks: String(suggestions.portfolioLinks || portfolioLinks || ''),
       ctaPreference: String(suggestions.ctaPreference || ''),
       tone: ['professional','tldr'].includes(String(suggestions.tone)) ? suggestions.tone : 'professional',
+      experienceLevel: ['fresher','intern'].includes(String(suggestions.experienceLevel)) ? suggestions.experienceLevel : experienceLevel,
       availability: String(suggestions.availability || ''),
       location: String(suggestions.location || ''),
     };
@@ -684,11 +747,13 @@ Return ONLY valid JSON in this exact format:
     // Return default suggestions instead of error
     res.status(200).json({
       skills: '',
-      achievements: '',
+      projects: '',
+      education: '',
       fitSummary: '',
       portfolioLinks: '',
       ctaPreference: '',
       tone: 'professional',
+      experienceLevel: 'fresher',
       availability: '',
       location: ''
     });
@@ -696,24 +761,61 @@ Return ONLY valid JSON in this exact format:
 });
 
 // Send an email using Gmail
-router.post('/send', async (req, res) => {
+router.post('/send', upload.single('resumeFile'), async (req, res) => {
   try {
     const tokens = req.session && req.session.tokens;
     if (!tokens) return res.status(401).json({ error: 'Not authenticated' });
+    
     const { to, subject = 'Hello', body = '' } = req.body || {};
+    const resumeFile = req.file;
+    
     if (!to) return res.status(400).json({ error: 'Missing recipient email (to)' });
 
     const oauth2Client = createOAuthClientFromSession(tokens);
     const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
 
-    const headers = [
-      `To: ${to}`,
-      `Subject: ${subject}`,
-      'Content-Type: text/plain; charset="UTF-8"',
-    ].join('\r\n');
-    const raw = `${headers}\r\n\r\n${body}`;
-    const encoded = Buffer.from(raw).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-    await gmail.users.messages.send({ userId: 'me', requestBody: { raw: encoded } });
+    // Create email with attachment if resume is provided
+    if (resumeFile) {
+      // Create multipart email with attachment
+      const boundary = '----=_Part_' + Math.random().toString(36).substr(2, 9);
+      
+      let emailBody = '';
+      emailBody += `--${boundary}\r\n`;
+      emailBody += 'Content-Type: text/plain; charset="UTF-8"\r\n';
+      emailBody += 'Content-Transfer-Encoding: 7bit\r\n\r\n';
+      emailBody += body + '\r\n\r\n';
+      
+      // Add resume attachment
+      emailBody += `--${boundary}\r\n`;
+      emailBody += `Content-Type: ${resumeFile.mimetype}\r\n`;
+      emailBody += `Content-Disposition: attachment; filename="${resumeFile.originalname}"\r\n`;
+      emailBody += 'Content-Transfer-Encoding: base64\r\n\r\n';
+      emailBody += resumeFile.buffer.toString('base64') + '\r\n';
+      emailBody += `--${boundary}--\r\n`;
+
+      const headers = [
+        `To: ${to}`,
+        `Subject: ${subject}`,
+        `Content-Type: multipart/mixed; boundary="${boundary}"`,
+      ].join('\r\n');
+      
+      const raw = `${headers}\r\n\r\n${emailBody}`;
+      const encoded = Buffer.from(raw).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      
+      await gmail.users.messages.send({ userId: 'me', requestBody: { raw: encoded } });
+    } else {
+      // Send simple text email without attachment
+      const headers = [
+        `To: ${to}`,
+        `Subject: ${subject}`,
+        'Content-Type: text/plain; charset="UTF-8"',
+      ].join('\r\n');
+      const raw = `${headers}\r\n\r\n${body}`;
+      const encoded = Buffer.from(raw).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      
+      await gmail.users.messages.send({ userId: 'me', requestBody: { raw: encoded } });
+    }
+    
     res.json({ sent: true });
   } catch (err) {
     console.error('Cold email send error:', err?.response?.data || err);
