@@ -1,4 +1,4 @@
-import { Inbox, Send, Archive, Trash2, Star, Tag, Sparkles, MessageSquare, X } from 'lucide-react'
+import { Inbox, Send, Archive, Trash2, Star, Sparkles, MessageSquare, X } from 'lucide-react'
 import { ProfileHeader } from './ProfileHeader'
 import { CategoryManager } from './CategoryManager'
 import type { UserProfile } from '../types'

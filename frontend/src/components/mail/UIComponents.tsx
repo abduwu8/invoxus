@@ -1,6 +1,10 @@
-import { Star, Trash2, Reply as LucideReply, Send, Wand2 } from 'lucide-react'
+import { Send, Wand2 } from 'lucide-react'
 import { useState } from 'react'
-import type { Importance, EmailListItem } from './types'
+import type { Email } from './types'
+
+// Local type definitions
+type Importance = 'high' | 'medium' | 'low'
+type EmailListItem = Email & { unread?: boolean }
 
 // Avatar Component
 export function Avatar({ from, unread }: { from: string; unread?: boolean }) {
