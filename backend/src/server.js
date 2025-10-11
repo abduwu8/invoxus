@@ -12,6 +12,7 @@ const scheduleRoutes = require('./routes/schedule');
 const inngestHandler = require('./inngest/handler');
 const chatRoutes = require('./routes/chat');
 const coldEmailRoutes = require('./routes/coldEmail');
+const paymentRoutes = require('./routes/payment');
 
 const app = express();
 // When behind a proxy (e.g., Render), enable trust so secure cookies work
@@ -78,6 +79,7 @@ app.use('/api/schedule', scheduleRoutes);
 app.use('/api/inngest', inngestHandler);
 app.use('/api/chat', chatRoutes);
 app.use('/api/cold-email', coldEmailRoutes);
+app.use('/api/payment', paymentRoutes);
 
 // Serve frontend in production
 if (process.env.NODE_ENV === 'production') {

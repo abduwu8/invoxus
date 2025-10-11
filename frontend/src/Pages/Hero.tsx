@@ -313,6 +313,162 @@ export default function Hero({ onLoggedIn }: Props) {
         </div>
       </section>
 
+      {/* Pricing & Trial Information Section */}
+      <section className="mx-auto max-w-6xl px-6 py-16 md:py-24">
+        <div className="text-center mb-12">
+          <h2 className="font-bold tracking-tight text-neutral-100 text-3xl md:text-5xl mb-4">
+            Simple, Transparent Pricing
+          </h2>
+          <p className="text-neutral-400 text-lg max-w-2xl mx-auto">
+            Start with 5 free AI-powered cold emails. No hidden fees, no subscriptions.
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          {/* Free Trial Card */}
+          <div className="relative rounded-2xl border border-neutral-800 bg-neutral-950/60 p-8">
+            <div className="absolute top-4 right-4">
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-900/30 text-green-400 border border-green-800/50">
+                Free Trial
+              </span>
+            </div>
+            <div className="mb-6">
+              <h3 className="text-2xl font-bold text-neutral-100 mb-2">Free Trial</h3>
+              <div className="flex items-baseline">
+                <span className="text-4xl font-bold text-green-400">₹0</span>
+                <span className="text-neutral-400 ml-2">for 5 emails</span>
+              </div>
+            </div>
+            <ul className="space-y-3 mb-8">
+              <li className="flex items-center text-neutral-300">
+                <svg className="w-5 h-5 text-green-400 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                5 AI-generated cold emails
+              </li>
+              <li className="flex items-center text-neutral-300">
+                <svg className="w-5 h-5 text-green-400 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                Professional & TLDR tone options
+              </li>
+              <li className="flex items-center text-neutral-300">
+                <svg className="w-5 h-5 text-green-400 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                Resume attachment support
+              </li>
+              <li className="flex items-center text-neutral-300">
+                <svg className="w-5 h-5 text-green-400 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                Full email management features
+              </li>
+            </ul>
+            <div className="text-center">
+              <span className="text-sm text-neutral-400">No credit card required</span>
+            </div>
+          </div>
+
+          {/* Paid Plan Card */}
+          <div className="relative rounded-2xl border border-blue-800/50 bg-gradient-to-br from-blue-950/30 to-purple-950/30 p-8">
+            <div className="absolute top-4 right-4">
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-900/30 text-blue-400 border border-blue-800/50">
+                After Trial
+              </span>
+            </div>
+            <div className="mb-6">
+              <h3 className="text-2xl font-bold text-neutral-100 mb-2">Pay Per Email</h3>
+              <div className="flex items-baseline">
+                <span className="text-4xl font-bold text-blue-400">₹1</span>
+                <span className="text-neutral-400 ml-2">per email</span>
+              </div>
+            </div>
+            <ul className="space-y-3 mb-8">
+              <li className="flex items-center text-neutral-300">
+                <svg className="w-5 h-5 text-blue-400 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                AI-generated cold emails
+              </li>
+              <li className="flex items-center text-neutral-300">
+                <svg className="w-5 h-5 text-blue-400 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                All tone and style options
+              </li>
+              <li className="flex items-center text-neutral-300">
+                <svg className="w-5 h-5 text-blue-400 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                Resume attachment support
+              </li>
+              <li className="flex items-center text-neutral-300">
+                <svg className="w-5 h-5 text-blue-400 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                Secure payment via Razorpay
+              </li>
+            </ul>
+            <div className="text-center">
+              <span className="text-sm text-neutral-400">Pay only when you use</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Additional Information */}
+        <div className="mt-12 text-center">
+          <div className="inline-flex items-center gap-6 text-sm text-neutral-400">
+            <div className="flex items-center gap-2">
+              <svg className="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+              No subscriptions
+            </div>
+            <div className="flex items-center gap-2">
+              <svg className="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+              Cancel anytime
+            </div>
+            <div className="flex items-center gap-2">
+              <svg className="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+              Secure payments
+            </div>
+          </div>
+        </div>
+
+        {/* How It Works */}
+        <div className="mt-16">
+          <h3 className="text-2xl font-bold text-neutral-100 text-center mb-8">How It Works</h3>
+          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+            <div className="text-center">
+              <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-white font-bold text-lg">1</span>
+              </div>
+              <h4 className="text-lg font-semibold text-neutral-100 mb-2">Sign Up Free</h4>
+              <p className="text-neutral-400 text-sm">Connect your Gmail account and get 5 free AI-generated cold emails instantly.</p>
+            </div>
+            <div className="text-center">
+              <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-white font-bold text-lg">2</span>
+              </div>
+              <h4 className="text-lg font-semibold text-neutral-100 mb-2">Generate Emails</h4>
+              <p className="text-neutral-400 text-sm">Use our AI to create personalized cold emails with your resume and preferences.</p>
+            </div>
+            <div className="text-center">
+              <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-white font-bold text-lg">3</span>
+              </div>
+              <h4 className="text-lg font-semibold text-neutral-100 mb-2">Pay As You Go</h4>
+              <p className="text-neutral-400 text-sm">After your free trial, pay only ₹1 per additional email. No hidden fees or subscriptions.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Final CTA section with aurora gradient background */}
       <section className="relative w-full min-h-screen overflow-hidden">
         {/* Aurora Dream Vivid Bloom */}

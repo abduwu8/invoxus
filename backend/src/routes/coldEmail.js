@@ -2,6 +2,8 @@ const express = require('express');
 const { google } = require('googleapis');
 const Groq = require('groq-sdk');
 const multer = require('multer');
+const Payment = require('../models/Payment');
+const Usage = require('../models/Usage');
 
 const router = express.Router();
 
@@ -38,6 +40,83 @@ router.use((err, req, res, next) => {
   }
   next(err);
 });
+
+// Middleware to check usage and handle free trials
+const checkUsageAndPayment = async (req, res, next) => {
+  try {
+    // Use authenticated user's email if available, otherwise fallback to session ID
+    const userEmail = req.session?.userProfile?.email;
+    const sessionId = req.sessionID || 
+      `${req.ip}_${req.get('User-Agent')?.slice(0, 50) || 'unknown'}`;
+    
+    // Get or create usage record - prioritize user email for authenticated users
+    const usage = await Usage.getOrCreateUsage(sessionId, userEmail);
+    
+    // Check if user has free trial left
+    if (usage.hasFreeTrialLeft()) {
+      // User can use free generation
+      req.usage = usage;
+      req.isFreeGeneration = true;
+      next();
+      return;
+    }
+    
+    // Free trial exhausted, check for payment
+    const { paymentId } = req.body;
+    
+    if (!paymentId) {
+      return res.status(402).json({
+        error: 'Free trial exhausted',
+        message: 'You have used all 5 free generations. Please pay ₹1 to continue.',
+        paymentRequired: true,
+        usage: usage.getUsageSummary()
+      });
+    }
+
+    const payment = await Payment.findById(paymentId);
+    
+    if (!payment) {
+      return res.status(404).json({
+        error: 'Payment not found',
+        message: 'Invalid payment ID',
+        paymentRequired: true,
+        usage: usage.getUsageSummary()
+      });
+    }
+
+    if (payment.status !== 'paid') {
+      return res.status(402).json({
+        error: 'Payment not completed',
+        message: 'Please complete payment to generate cold email',
+        paymentRequired: true,
+        paymentStatus: payment.status,
+        usage: usage.getUsageSummary()
+      });
+    }
+
+    if (payment.isExpired()) {
+      return res.status(400).json({
+        error: 'Payment expired',
+        message: 'Please create a new payment order',
+        paymentRequired: true,
+        usage: usage.getUsageSummary()
+      });
+    }
+
+    // Attach payment and usage info to request
+    req.payment = payment;
+    req.usage = usage;
+    req.isFreeGeneration = false;
+    next();
+
+  } catch (error) {
+    console.error('Usage/payment check error:', error);
+    res.status(500).json({
+      error: 'Usage verification failed',
+      message: 'Unable to verify usage status'
+    });
+  }
+};
 
 // Test endpoint to verify request body parsing
 router.post('/test', (req, res) => {
@@ -394,8 +473,25 @@ PROFESSIONAL tone: Generate everything in professional style - be results-focuse
 }
 
 
-router.post('/generate', upload.single('resumeFile'), async (req, res) => {
+router.post('/generate', upload.single('resumeFile'), checkUsageAndPayment, async (req, res) => {
   try {
+    // Log generation type and usage
+    if (req.isFreeGeneration) {
+      console.log('Free generation used:', {
+        usageId: req.usage._id,
+        freeGenerationsUsed: req.usage.freeGenerationsUsed,
+        remainingFree: req.usage.getRemainingFreeGenerations()
+      });
+    } else {
+      console.log('Paid generation used:', {
+        paymentId: req.payment._id,
+        amount: req.payment.amount,
+        currency: req.payment.currency,
+        paidAt: req.payment.paidAt,
+        usageId: req.usage._id
+      });
+    }
+
     // Simple rate limiting for startup phase - COMMENTED OUT FOR TESTING
     // const sessionKey = 'cold_email_count_' + new Date().toDateString();
     // const currentCount = parseInt(req.session?.[sessionKey] || '0');
@@ -620,6 +716,13 @@ router.post('/generate', upload.single('resumeFile'), async (req, res) => {
     const subjectOut = String(draft.subject || '').trim().slice(0, 120) || `Application — ${jobTitle || 'Role'} at ${company || 'your team'}`.slice(0, 70);
     const bodyOut = String(draft.body || '').trim().slice(0, 4000);
 
+    // Track usage
+    if (req.isFreeGeneration) {
+      await req.usage.useFreeGeneration();
+    } else {
+      await req.usage.usePaidGeneration(req.payment.amount);
+    }
+
     // Increment daily counter - COMMENTED OUT FOR TESTING
     // if (req.session) {
     //   req.session[sessionKey] = (currentCount + 1).toString();
@@ -629,10 +732,15 @@ router.post('/generate', upload.single('resumeFile'), async (req, res) => {
       to, 
       subject: subjectOut, 
       body: bodyOut, 
-      reason: draft.reason
-      // dailyLimit: 10,
-      // used: currentCount + 1,
-      // remaining: 10 - (currentCount + 1)
+      reason: draft.reason,
+      usage: req.usage.getUsageSummary(),
+      isFreeGeneration: req.isFreeGeneration,
+      payment: req.isFreeGeneration ? null : {
+        id: req.payment._id,
+        amount: req.payment.amount,
+        currency: req.payment.currency,
+        paidAt: req.payment.paidAt
+      }
     });
   } catch (err) {
     console.error('Cold email generate error:', err?.response?.data || err);
@@ -648,6 +756,29 @@ router.post('/generate', upload.single('resumeFile'), async (req, res) => {
       error: 'AI email generation failed',
       message: err?.message || 'Unknown error occurred',
       details: 'Please try again or contact support if the issue persists'
+    });
+  }
+});
+
+// Check usage status
+router.get('/usage-status', async (req, res) => {
+  try {
+    // Use authenticated user's email if available, otherwise fallback to session ID
+    const userEmail = req.session?.userProfile?.email;
+    const sessionId = req.sessionID || 
+      `${req.ip}_${req.get('User-Agent')?.slice(0, 50) || 'unknown'}`;
+    
+    const usage = await Usage.getOrCreateUsage(sessionId, userEmail);
+    
+    res.json({
+      success: true,
+      usage: usage.getUsageSummary()
+    });
+  } catch (error) {
+    console.error('Usage status check error:', error);
+    res.status(500).json({
+      error: 'Failed to check usage status',
+      message: error.message
     });
   }
 });

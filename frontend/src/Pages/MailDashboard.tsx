@@ -63,9 +63,10 @@ function NewFeatureModal({ onClose, onTryCold }: { onClose: () => void; onTryCol
   )
 }
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Star, Reply as LucideReply, Trash2, Wand2, Send, X, Plus, Inbox, MessageSquare, Sparkles, CheckSquare, KeyRound, LogOut, Menu, ArrowLeft, ThumbsUp, ThumbsDown, Paperclip, Check } from 'lucide-react'
+import { Star, Reply as LucideReply, Trash2, Wand2, Send, X, Plus, Inbox, MessageSquare, Sparkles, CheckSquare, KeyRound, LogOut, Menu, ArrowLeft, ThumbsUp, ThumbsDown, Paperclip, Check, RefreshCw } from 'lucide-react'
 import { PlaceholdersAndVanishInput } from '../components/ui/reveal'
 import { LoaderOne } from '../components/loader'
+import PaymentComponent from '../components/PaymentComponent'
 // Emoji picker removed for now
 
 type Importance = 'high' | 'medium' | 'low'
@@ -137,7 +138,185 @@ export default function MailDashboard() {
   const [chatPendingSend, setChatPendingSend] = useState<null | { toEmail: string; subject: string; body: string }>(null)
   const [coldOpen, setColdOpen] = useState(false)
   const [showFeatureModal, setShowFeatureModal] = useState(false)
+  const [usage, setUsage] = useState<any>(null)
   const [search, setSearch] = useState('')
+
+  // Function to fetch usage status
+  const fetchUsageStatus = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/api/cold-email/usage-status`, {
+        method: 'GET',
+        credentials: 'include',
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setUsage(data.usage);
+        return data.usage;
+      }
+    } catch (error) {
+      console.error('Failed to fetch usage status:', error);
+    }
+    return null;
+  };
+
+  // Function to handle email generation with usage update
+  const handleGenerate = async (payload: {
+    to: string;
+    skills: string;
+    role?: string;
+    company?: string;
+    jobTitle?: string;
+    projects?: string;
+    education?: string;
+    portfolioLinks?: string;
+    fitSummary?: string;
+    ctaPreference?: string;
+    tone?: 'professional' | 'tldr';
+    experienceLevel?: 'fresher' | 'intern';
+    availability?: string;
+    location?: string;
+    lowCost?: boolean;
+    resumeFile?: File;
+    paymentId?: string;
+  }) => {
+    console.log('Frontend sending payload:', payload);
+    console.log('Frontend payload type:', typeof payload);
+    
+    // Create FormData for file upload
+    const formData = new FormData();
+    formData.append('to', payload.to);
+    formData.append('skills', payload.skills);
+    if (payload.role) formData.append('role', payload.role);
+    if (payload.company) formData.append('company', payload.company);
+    if (payload.jobTitle) formData.append('jobTitle', payload.jobTitle);
+    if (payload.projects) formData.append('projects', payload.projects);
+    if (payload.education) formData.append('education', payload.education);
+    if (payload.portfolioLinks) formData.append('portfolioLinks', payload.portfolioLinks);
+    if (payload.fitSummary) formData.append('fitSummary', payload.fitSummary);
+    if (payload.ctaPreference) formData.append('ctaPreference', payload.ctaPreference);
+    if (payload.tone) formData.append('tone', payload.tone);
+    if (payload.experienceLevel) formData.append('experienceLevel', payload.experienceLevel);
+    if (payload.availability) formData.append('availability', payload.availability);
+    if (payload.location) formData.append('location', payload.location);
+    if (payload.lowCost) formData.append('lowCost', payload.lowCost.toString());
+    if (payload.resumeFile) formData.append('resumeFile', payload.resumeFile);
+    if (payload.paymentId) formData.append('paymentId', payload.paymentId);
+    
+    const r = await fetch(`${API_BASE}/api/cold-email/generate`, {
+      method: 'POST',
+      credentials: 'include',
+      body: formData,
+    });
+    console.log('Response status:', r.status);
+    console.log('Response ok:', r.ok);
+    
+    if (!r.ok) {
+      const errorText = await r.text();
+      console.error('Response error:', errorText);
+      throw new Error(`Failed to generate: ${r.status} ${errorText}`);
+    }
+    
+    const result = await r.json() as { to: string; subject: string; body: string; reason?: string; usage?: any };
+    
+    // Refresh usage status after successful generation
+    if (result.usage) {
+      setUsage(result.usage);
+    }
+    
+    return result;
+  };
+
+  // Function to refresh emails
+  const refreshEmails = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Fetch emails based on current mode
+      let url = `${API_BASE}/api/gmail/messages`;
+      if (showingOtps) {
+        url = `${API_BASE}/api/gmail/messages/otps?limit=300`;
+      } else if (unsubscribeMode) {
+        const apiUrl = buildApiUrl('/api/gmail/unsubscribe/suggestions');
+        apiUrl.searchParams.set('limit', '200');
+        url = apiUrl.toString();
+      } else if (aiDeleteMode) {
+        const apiUrl = buildApiUrl('/api/gmail/messages/suggest-deletions');
+        apiUrl.searchParams.set('limit', '200');
+        apiUrl.searchParams.set('strict', '1');
+        apiUrl.searchParams.set('ai', '1');
+        if (search.trim()) apiUrl.searchParams.set('q', search.trim());
+        url = apiUrl.toString();
+      } else {
+        // Regular inbox - check if we have search
+        if (search.trim()) {
+          url = `${API_BASE}/api/gmail/messages?limit=100&q=${encodeURIComponent(search.trim())}`;
+        } else {
+          url = `${API_BASE}/api/gmail/messages?limit=100`;
+        }
+      }
+
+      const response = await fetch(url, { credentials: 'include' });
+      if (!response.ok) throw new Error(`Failed: ${response.status}`);
+      
+      const json = await response.json();
+      
+      if (unsubscribeMode) {
+        // Map unsubscribe suggestions to email list format
+        const list = ((json.suggestions as any[]) || []).map((s) => ({
+          id: s.id,
+          threadId: s.threadId,
+          subject: s.subject || '',
+          from: s.from || '',
+          date: s.date || '',
+          snippet: s.hasOneClick ? 'One‑click unsubscribe available' : 'Unsubscribe available',
+        }));
+        setEmails(list);
+      } else {
+        setEmails(json.messages || []);
+      }
+      
+      // Update sent count if not in special modes
+      if (!showingOtps && !unsubscribeMode && !aiDeleteMode) {
+        try {
+          const sentResp = await fetch(`${API_BASE}/api/gmail/messages?limit=100&folder=sent`, { credentials: 'include' });
+          if (sentResp.ok) {
+            const sentJson = await sentResp.json();
+            setSentCount(Array.isArray(sentJson.messages) ? sentJson.messages.length : 0);
+          }
+        } catch (e) {
+          // Ignore sent count errors
+        }
+      }
+      
+    } catch (e: any) {
+      setError(e?.message || 'Failed to refresh emails');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch usage status when cold email modal opens
+  useEffect(() => {
+    if (coldOpen) {
+      fetchUsageStatus();
+    }
+  }, [coldOpen]);
+
+  // Add keyboard shortcut for refresh (Ctrl+R or Cmd+R)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+        e.preventDefault();
+        refreshEmails();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   const [showingSuggestions, setShowingSuggestions] = useState(false)
   // Show once per session after login: New feature modal
   useEffect(() => {
@@ -588,6 +767,15 @@ export default function MailDashboard() {
               className="w-full min-w-0 rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-neutral-700"
               placeholder="Search emails (Enter)"
             />
+            <button
+              className="size-9 inline-flex items-center justify-center rounded-md border border-neutral-800 hover:bg-neutral-900 disabled:opacity-50"
+              onClick={refreshEmails}
+              disabled={loading}
+              title="Refresh emails"
+              aria-label="Refresh emails"
+            >
+              <RefreshCw className={`size-4 ${loading ? 'animate-spin' : ''}`} />
+            </button>
             {search ? (
               <button
                 className="text-xs text-neutral-400 hover:text-neutral-200"
@@ -1266,61 +1454,8 @@ export default function MailDashboard() {
       {coldOpen ? (
         <ComposeColdEmailModal
           onClose={() => setColdOpen(false)}
-          onGenerate={async (payload: {
-            to: string;
-            skills: string;
-            role?: string;
-            company?: string;
-            jobTitle?: string;
-            projects?: string;
-            education?: string;
-            portfolioLinks?: string;
-            fitSummary?: string;
-            ctaPreference?: string;
-            tone?: 'professional' | 'tldr';
-            experienceLevel?: 'fresher' | 'intern';
-            availability?: string;
-            location?: string;
-            lowCost?: boolean;
-            resumeFile?: File;
-          }) => {
-            console.log('Frontend sending payload:', payload);
-            console.log('Frontend payload type:', typeof payload);
-            
-            // Create FormData for file upload
-            const formData = new FormData();
-            formData.append('to', payload.to);
-            formData.append('skills', payload.skills);
-            if (payload.role) formData.append('role', payload.role);
-            if (payload.company) formData.append('company', payload.company);
-            if (payload.jobTitle) formData.append('jobTitle', payload.jobTitle);
-            if (payload.projects) formData.append('projects', payload.projects);
-            if (payload.education) formData.append('education', payload.education);
-            if (payload.portfolioLinks) formData.append('portfolioLinks', payload.portfolioLinks);
-            if (payload.fitSummary) formData.append('fitSummary', payload.fitSummary);
-            if (payload.ctaPreference) formData.append('ctaPreference', payload.ctaPreference);
-            if (payload.tone) formData.append('tone', payload.tone);
-            if (payload.experienceLevel) formData.append('experienceLevel', payload.experienceLevel);
-            if (payload.availability) formData.append('availability', payload.availability);
-            if (payload.location) formData.append('location', payload.location);
-            if (payload.lowCost) formData.append('lowCost', payload.lowCost.toString());
-            if (payload.resumeFile) formData.append('resumeFile', payload.resumeFile);
-            
-            const r = await fetch(`${API_BASE}/api/cold-email/generate`, {
-              method: 'POST',
-              credentials: 'include',
-              body: formData,
-            })
-            console.log('Response status:', r.status);
-            console.log('Response ok:', r.ok);
-            
-            if (!r.ok) {
-              const errorText = await r.text();
-              console.error('Response error:', errorText);
-              throw new Error(`Failed to generate: ${r.status} ${errorText}`)
-            }
-            return (await r.json()) as { to: string; subject: string; body: string; reason?: string }
-          }}
+          onGenerate={handleGenerate}
+          usage={usage}
           onSend={async (payload: { to: string; subject: string; body: string; resumeFile?: File }) => {
             // Create FormData for file upload
             const formData = new FormData();
@@ -1743,7 +1878,7 @@ function SidebarContent({
         </div>
         <div className="pt-1 pb-2 text-center">
           <a
-            href="https://invoxus.in/privacy"
+            href="https://invoxus.email/privacy"
             target="_blank"
             rel="noopener noreferrer"
             className="text-[11px] text-neutral-500 hover:text-neutral-300 underline decoration-neutral-700 hover:decoration-neutral-400"
@@ -2397,6 +2532,7 @@ function ComposeColdEmailModal({
   onClose,
   onGenerate,
   onSend,
+  usage,
 }: {
   onClose: () => void
   onGenerate: (
@@ -2418,9 +2554,11 @@ function ComposeColdEmailModal({
       location?: string
       lowCost?: boolean
       resumeFile?: File
+      paymentId?: string
     }
   ) => Promise<{ to: string; subject: string; body: string; reason?: string }>
   onSend: (p: { to: string; subject: string; body: string; resumeFile?: File }) => Promise<boolean>
+  usage?: any
 }) {
   const [to, setTo] = useState('')
   const [role, setRole] = useState('HR')
@@ -2445,9 +2583,10 @@ function ComposeColdEmailModal({
   const [error, setError] = useState<string | null>(null)
   const [reason, setReason] = useState<string | null>(null)
   const [suggestionNote, setSuggestionNote] = useState<string | null>(null)
+  const [paymentId, setPaymentId] = useState<string | null>(null)
+  const [showPayment, setShowPayment] = useState(false)
   const previewRef = useRef<HTMLDivElement | null>(null)
   const resumeInputRef = useRef<HTMLInputElement | null>(null)
-
 
   // Fetch AI-driven suggestions when job title changes; only fill empty fields
   useEffect(() => {
@@ -2677,56 +2816,73 @@ function ComposeColdEmailModal({
               </label>
               {error ? <div className="text-xs text-red-400">{error}</div> : null}
               <div className="flex items-center gap-2 pt-1">
-                <button
-                  disabled={loading || toInvalid}
-                  className="inline-flex items-center gap-2 rounded-md border border-neutral-800 px-3 py-1.5 text-sm hover:bg-neutral-900 disabled:opacity-50"
-                  onClick={async () => {
-                    try {
-                      setLoading(true)
-                      setError(null)
-                      const d = await onGenerate({
-                        to,
-                        skills,
-                        role,
-                        company,
-                        jobTitle,
-                        projects,
-                        education,
-                        portfolioLinks,
-                        fitSummary,
-                        ctaPreference,
-                        tone,
-                        experienceLevel,
-                        availability,
-                        location,
-                        lowCost,
-                        resumeFile: resumeFile || undefined,
-                      })
-                      if (d.to && !to) setTo(d.to)
-                      const nextSubject = d.subject || subject || ''
-                      const nextBody = d.body || body || ''
-                      setSubject(nextSubject)
-                      setBody(nextBody)
-                      setReason(d.reason || null)
-                      // notify
-                      import('sonner').then(({ toast }) => toast.success('Draft generated'))
-                      // scroll preview into view on mobile
-                      setTimeout(() => {
-                        previewRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                      }, 50)
-                    } catch (e: any) {
-                      console.error('Generate error:', e)
-                      setError(e?.message || 'Failed to generate draft')
-                      import('sonner').then(({ toast }) => toast.error('Failed to generate draft'))
-                    } finally {
-                      setLoading(false)
-                    }
-                  }}
-                >
-                  <Wand2 className="size-4" />
-                  {loading ? 'Generating…' : previewReady ? 'Regenerate' : 'Generate draft'}
-                </button>
-                <div className="text-xs text-neutral-500">AI creates a short, tailored draft.</div>
+                {!paymentId && (!usage || usage.remainingFreeGenerations === 0) ? (
+                  <button
+                    disabled={loading || toInvalid}
+                    className="inline-flex items-center gap-2 rounded-md bg-blue-600 hover:bg-blue-700 px-3 py-1.5 text-sm text-white disabled:opacity-50"
+                    onClick={() => setShowPayment(true)}
+                  >
+                    <Wand2 className="size-4" />
+                    Pay ₹1 & Generate Email
+                  </button>
+                ) : (
+                  <button
+                    disabled={loading || toInvalid}
+                    className="inline-flex items-center gap-2 rounded-md border border-neutral-800 px-3 py-1.5 text-sm hover:bg-neutral-900 disabled:opacity-50"
+                    onClick={async () => {
+                      try {
+                        setLoading(true)
+                        setError(null)
+                        const d = await onGenerate({
+                          to,
+                          skills,
+                          role,
+                          company,
+                          jobTitle,
+                          projects,
+                          education,
+                          portfolioLinks,
+                          fitSummary,
+                          ctaPreference,
+                          tone,
+                          experienceLevel,
+                          availability,
+                          location,
+                          lowCost,
+                          resumeFile: resumeFile || undefined,
+                          paymentId: paymentId || undefined,
+                        })
+                        if (d.to && !to) setTo(d.to)
+                        const nextSubject = d.subject || subject || ''
+                        const nextBody = d.body || body || ''
+                        setSubject(nextSubject)
+                        setBody(nextBody)
+                        setReason(d.reason || null)
+                        // notify
+                        import('sonner').then(({ toast }) => toast.success('Draft generated'))
+                        // scroll preview into view on mobile
+                        setTimeout(() => {
+                          previewRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                        }, 50)
+                      } catch (e: any) {
+                        console.error('Generate error:', e)
+                        setError(e?.message || 'Failed to generate draft')
+                        import('sonner').then(({ toast }) => toast.error('Failed to generate draft'))
+                      } finally {
+                        setLoading(false)
+                      }
+                    }}
+                  >
+                    <Wand2 className="size-4" />
+                    {loading ? 'Generating…' : previewReady ? 'Regenerate' : 'Generate draft'}
+                  </button>
+                )}
+                <div className="text-xs text-neutral-500">
+                  {paymentId ? 'AI creates a short, tailored draft.' : 
+                   usage && usage.remainingFreeGenerations > 0 ? 
+                   `Free generation available (${usage.remainingFreeGenerations} left)` : 
+                   'Payment required to generate email.'}
+                </div>
               </div>
               <div>
                 <label className="block text-xs text-neutral-500 mb-1">Subject</label>
@@ -2784,6 +2940,60 @@ function ComposeColdEmailModal({
           </div>
         </div>
       </div>
+      
+      {/* Payment Modal */}
+      {showPayment && (
+        <div className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-neutral-950 border border-neutral-800 rounded-lg shadow-2xl">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-neutral-100">Payment Required</h3>
+                <button 
+                  onClick={() => setShowPayment(false)}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-neutral-800 text-neutral-400 hover:text-white"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              
+              <PaymentComponent
+                onPaymentSuccess={async (paymentId) => {
+                  setPaymentId(paymentId);
+                  setShowPayment(false);
+                  if (paymentId === 'free_generation') {
+                    import('sonner').then(({ toast }) => toast.success('Free email generated successfully!'));
+                  } else {
+                    import('sonner').then(({ toast }) => toast.success('Payment successful! You can now generate your email.'));
+                  }
+                }}
+                onPaymentError={(error) => {
+                  console.error('Payment error:', error);
+                  import('sonner').then(({ toast }) => toast.error('Payment failed. Please try again.'));
+                }}
+                serviceData={{
+                  to,
+                  skills,
+                  role,
+                  company,
+                  jobTitle,
+                  projects,
+                  education,
+                  portfolioLinks,
+                  fitSummary,
+                  ctaPreference,
+                  tone,
+                  experienceLevel,
+                  availability,
+                  location,
+                  lowCost,
+                  resumeFile: resumeFile?.name || undefined
+                }}
+                usage={usage}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
