@@ -141,6 +141,21 @@ export default function Hero({ onLoggedIn }: Props) {
             Star on GitHub
           </a>
         </div>
+        
+        {/* Privacy Policy Notice */}
+        <div className="mt-4 text-center">
+          <p className="text-neutral-400 text-xs">
+            By signing in, you agree to our{' '}
+            <a
+              href="https://invoxus.email/privacy"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-neutral-300 hover:text-neutral-100 underline transition-colors"
+            >
+              Privacy Policy
+            </a>
+          </p>
+        </div>
       </section>
 
       {/* Bottom showcase placeholder (replace with your image later) */}
@@ -495,17 +510,28 @@ export default function Hero({ onLoggedIn }: Props) {
           <p className="mt-6 text-neutral-100/70 text-lg sm:text-xl md:text-2xl max-w-4xl mx-auto">
           Streamline your inbox in minutes, not hours—with Invoxus.
           </p>
-          <div className="mt-10 flex items-center justify-center">
+          <div className="mt-10 flex flex-col items-center justify-center gap-3">
             <button
               onClick={startGoogleAuth}
               className="inline-flex items-center gap-2 rounded-lg border border-neutral-800 bg-neutral-950/70 hover:bg-neutral-900 px-5 py-2.5 text-sm sm:text-base text-neutral-100 shadow-sm"
             >
               Get Started
             </button>
+            <p className="text-neutral-100/60 text-xs">
+              By getting started, you agree to our{' '}
+              <a
+                href="https://invoxus.email/privacy/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-neutral-100/80 hover:text-neutral-100 underline transition-colors"
+              >
+                Privacy Policy
+              </a>
+            </p>
           </div>
         </div>
-        {/* Bottom social icons over gradient */}
-        <div className="absolute inset-x-0 bottom-6 z-10 flex items-center justify-center">
+        {/* Bottom social icons and legal links over gradient */}
+        <div className="absolute inset-x-0 bottom-6 z-10 flex flex-col items-center justify-center gap-4">
           <nav aria-label="Social links" className="flex items-center gap-6">
             {/* GitHub */}
             <a
@@ -540,6 +566,25 @@ export default function Hero({ onLoggedIn }: Props) {
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
                 <path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2Zm0 2v.01L12 13 4 6.01V6h16ZM4 18V8.24l7.4 6.29a1 1 0 0 0 1.2 0L20 8.24V18H4Z"/>
               </svg>
+            </a>
+          </nav>
+          
+          {/* Legal links */}
+          <nav aria-label="Legal links" className="flex items-center gap-4 text-sm">
+            <a
+              href="https://invoxus.email/privacy/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-black opacity-70 hover:opacity-100 transition-opacity underline"
+            >
+              Privacy Policy
+            </a>
+            <span className="text-black opacity-50">•</span>
+            <a
+              href="mailto:contact@invoxus.email"
+              className="text-black opacity-70 hover:opacity-100 transition-opacity underline"
+            >
+              Contact
             </a>
           </nav>
         </div>
