@@ -5,6 +5,7 @@ import { FcGoogle } from 'react-icons/fc'
 import { PointerHighlight } from '../components/ui/pointer-highlight'
 import { FlipWords } from '../components/flipwords'
 import { useEffect, useMemo, useState } from 'react'
+import { Check, Mail, Sparkles, FileText, Lock, Zap, Infinity } from 'lucide-react'
 
 const API_BASE = import.meta.env.PROD ? '' : ((import.meta.env.VITE_API_BASE as string) || 'http://localhost:4000')
 
@@ -166,13 +167,27 @@ export default function Hero({ onLoggedIn }: Props) {
           <div className="pointer-events-none absolute inset-y-0 right-[-16px] w-px bg-neutral-800/80" />
           {/* Clean horizontal line above the image frame (full-bleed across viewport) */}
           <div className="pointer-events-none absolute top-[-16px] left-1/2 -translate-x-1/2 w-full h-px bg-neutral-800/80" />
-          {/* Image frame */}
+          {/* Video frame */}
           <div className="relative rounded-2xl border border-neutral-800 overflow-hidden">
-            <img
-              src={new URL('../images/Screenshot 2025-08-10 182210.png', import.meta.url).toString()}
-              alt="App preview"
-              className="w-full h-auto block"
-              loading="eager"
+            {/* Mobile video */}
+            <video
+              src={new URL('../images/InvoxusPromoMobile.mp4', import.meta.url).toString()}
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="w-full h-auto block md:hidden"
+              poster={new URL('../images/Screenshot 2025-08-10 182210.png', import.meta.url).toString()}
+            />
+            {/* Desktop video */}
+            <video
+              src={new URL('../images/InvoxusPromo.mp4', import.meta.url).toString()}
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="w-full h-auto hidden md:block"
+              poster={new URL('../images/Screenshot 2025-08-10 182210.png', import.meta.url).toString()}
             />
           </div>
         </div>
@@ -209,13 +224,8 @@ export default function Hero({ onLoggedIn }: Props) {
         </div>
       </section>
 
-      <section className="mx-auto max-w-4xl px-6 pb-24 mt-10 md:mt-24 mb-10 md:mb-16">
+      <section className="mx-auto max-w-6xl px-6 pb-16 md:pb-24">
         <div className="relative">
-          {/* Clean vertical lines outside the frame */}
-          <div className="pointer-events-none absolute inset-y-0 left-[-16px] w-px bg-neutral-800/80" />
-          <div className="pointer-events-none absolute inset-y-0 right-[-16px] w-px bg-neutral-800/80" />
-          {/* Clean horizontal line above the frame */}
-          <div className="pointer-events-none absolute top-[-16px] left-1/2 -translate-x-1/2 w-full h-px bg-neutral-800/80" />
           {/* Image frame (same visual weight as the template card) */}
           <div className="relative rounded-2xl border border-neutral-800 overflow-hidden bg-neutral-950/70">
             <div className="h-[440px] w-full grid place-items-center text-neutral-500">
@@ -230,23 +240,22 @@ export default function Hero({ onLoggedIn }: Props) {
             </div>
             {/* Full overlay across the whole video with centered text */}
             <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-black/70">
-              <div className="flex items-center gap-2 text-neutral-100 text-xl md:text-4xl font-semibold">
-                
-                <FlipWords words={[
-                  'Reply in seconds',
-                  'Manage your mails in one click',
-                  'Clear your inbox in seconds',
-                ]} />
+              <div className="flex items-center justify-center text-center px-4">
+                <div className="text-neutral-100 text-xl md:text-4xl font-semibold">
+                  <FlipWords words={[
+                    'Reply in seconds',
+                    'Manage your mails in one click',
+                    'Clear your inbox in seconds',
+                  ]} />
+                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      
-
       {/* Slideshow intro */}
-      <section className="mx-auto max-w-6xl px-6 pt-8 md:pt-12 pb-8 md:pb-10 text-center">
+      <section className="mx-auto max-w-6xl px-6 pt-16 md:pt-24 pb-8 md:pb-10 text-center">
         <h3 className="font-bold tracking-tight text-neutral-100 text-3xl md:text-5xl">Why Invoxus?</h3>
       </section>
 
@@ -330,156 +339,192 @@ export default function Hero({ onLoggedIn }: Props) {
 
       {/* Pricing & Trial Information Section */}
       <section className="mx-auto max-w-6xl px-6 py-16 md:py-24">
-        <div className="text-center mb-12">
-          <h2 className="font-bold tracking-tight text-neutral-100 text-3xl md:text-5xl mb-4">
-            Simple, Transparent Pricing
+        <div className="text-center mb-16">
+          <h2 className="font-bold tracking-tight text-white text-3xl md:text-5xl mb-3">
+            Simple Pricing
           </h2>
-          <p className="text-neutral-400 text-lg max-w-2xl mx-auto">
-            Start with 5 free AI-powered cold emails. No hidden fees, no subscriptions.
+          <p className="text-neutral-400 text-base max-w-xl mx-auto">
+            Start free. Pay only when you need more.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+        <div className="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto">
           {/* Free Trial Card */}
-          <div className="relative rounded-2xl border border-neutral-800 bg-neutral-950/60 p-8">
-            <div className="absolute top-4 right-4">
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-900/30 text-green-400 border border-green-800/50">
-                Free Trial
-              </span>
-            </div>
-            <div className="mb-6">
-              <h3 className="text-2xl font-bold text-neutral-100 mb-2">Free Trial</h3>
-              <div className="flex items-baseline">
-                <span className="text-4xl font-bold text-green-400">₹0</span>
-                <span className="text-neutral-400 ml-2">for 5 emails</span>
+          <div className="relative rounded-xl border border-neutral-800/50 bg-neutral-900/30 p-8 backdrop-blur-sm">
+            <div className="mb-8">
+              <div className="text-sm text-neutral-400 mb-2">Free Trial</div>
+              <div className="flex items-baseline gap-2 mb-1">
+                <span className="text-5xl font-bold text-white">₹0</span>
+                <span className="text-neutral-500">/ 5 emails</span>
               </div>
             </div>
-            <ul className="space-y-3 mb-8">
-              <li className="flex items-center text-neutral-300">
-                <svg className="w-5 h-5 text-green-400 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-                5 AI-generated cold emails
-              </li>
-              <li className="flex items-center text-neutral-300">
-                <svg className="w-5 h-5 text-green-400 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-                Professional & TLDR tone options
-              </li>
-              <li className="flex items-center text-neutral-300">
-                <svg className="w-5 h-5 text-green-400 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-                Resume attachment support
-              </li>
-              <li className="flex items-center text-neutral-300">
-                <svg className="w-5 h-5 text-green-400 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-                Full email management features
-              </li>
-            </ul>
-            <div className="text-center">
-              <span className="text-sm text-neutral-400">No credit card required</span>
+            
+            <div className="space-y-4 mb-8">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5">
+                  <Mail className="w-5 h-5 text-white/70" strokeWidth={1.5} />
+                </div>
+                <div className="flex-1">
+                  <div className="text-neutral-200 text-sm">5 AI-generated emails</div>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5">
+                  <Zap className="w-5 h-5 text-white/70" strokeWidth={1.5} />
+                </div>
+                <div className="flex-1">
+                  <div className="text-neutral-200 text-sm">2 tone options</div>
+                  <div className="text-neutral-500 text-xs mt-0.5">Professional & TL;DR</div>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5">
+                  <FileText className="w-5 h-5 text-white/70" strokeWidth={1.5} />
+                </div>
+                <div className="flex-1">
+                  <div className="text-neutral-200 text-sm">Resume attachment</div>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5">
+                  <Check className="w-5 h-5 text-white/70" strokeWidth={1.5} />
+                </div>
+                <div className="flex-1">
+                  <div className="text-neutral-200 text-sm">Full email management</div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="pt-4 border-t border-neutral-800/50">
+              <div className="text-xs text-neutral-500 text-center">No credit card required</div>
             </div>
           </div>
 
           {/* Paid Plan Card */}
-          <div className="relative rounded-2xl border border-blue-800/50 bg-gradient-to-br from-blue-950/30 to-purple-950/30 p-8">
+          <div className="relative rounded-xl border border-white/10 bg-white/5 p-8 backdrop-blur-sm">
             <div className="absolute top-4 right-4">
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-900/30 text-blue-400 border border-blue-800/50">
-                After Trial
-              </span>
+              <div className="px-2.5 py-1 rounded-full bg-white/10 backdrop-blur-sm">
+                <span className="text-xs font-medium text-white/90">Popular</span>
+              </div>
             </div>
+            
+            <div className="mb-8">
+              <div className="text-sm text-neutral-400 mb-2">Pay Per Use</div>
+              <div className="flex items-baseline gap-2 mb-1">
+                <span className="text-5xl font-bold text-white">₹1</span>
+                <span className="text-neutral-500">/ email</span>
+              </div>
+            </div>
+            
+            <div className="space-y-4 mb-8">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5">
+                  <Infinity className="w-5 h-5 text-white/90" strokeWidth={1.5} />
+                </div>
+                <div className="flex-1">
+                  <div className="text-white text-sm font-medium">Unlimited emails</div>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5">
+                  <Sparkles className="w-5 h-5 text-white/90" strokeWidth={1.5} />
+                </div>
+                <div className="flex-1">
+                  <div className="text-white text-sm font-medium">6 AI tone options</div>
+                  <div className="text-neutral-400 text-xs mt-0.5">Casual, Formal, Enthusiastic, Confident + more</div>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5">
+                  <FileText className="w-5 h-5 text-white/90" strokeWidth={1.5} />
+                </div>
+                <div className="flex-1">
+                  <div className="text-white text-sm font-medium">Resume attachment</div>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5">
+                  <Lock className="w-5 h-5 text-white/90" strokeWidth={1.5} />
+                </div>
+                <div className="flex-1">
+                  <div className="text-white text-sm font-medium">Secure payments</div>
+                  <div className="text-neutral-400 text-xs mt-0.5">Razorpay integration</div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="pt-4 border-t border-white/10">
+              <div className="text-xs text-neutral-400 text-center">Pay only when you generate</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Simple Benefits Bar */}
+        <div className="mt-12 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm text-neutral-400">
+          <div className="flex items-center gap-2">
+            <Check className="w-4 h-4 text-white/50" strokeWidth={2} />
+            <span>No subscriptions</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Check className="w-4 h-4 text-white/50" strokeWidth={2} />
+            <span>Cancel anytime</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Check className="w-4 h-4 text-white/50" strokeWidth={2} />
+            <span>Instant access</span>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section className="mx-auto max-w-7xl px-6 py-20 md:py-32">
+        <div className="text-center mb-16">
+          <h2 className="font-bold tracking-tight text-neutral-100 text-4xl md:text-6xl mb-6">
+            Trusted by Professionals
+          </h2>
+          <p className="text-neutral-400 text-lg md:text-xl max-w-3xl mx-auto">
+            Here's what our users have to say
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-8 max-w-7xl mx-auto">
+          {/* Testimonial 1 */}
+          <div className="relative rounded-2xl border border-neutral-800 bg-neutral-950/60 p-8">
             <div className="mb-6">
-              <h3 className="text-2xl font-bold text-neutral-100 mb-2">Pay Per Email</h3>
-              <div className="flex items-baseline">
-                <span className="text-4xl font-bold text-blue-400">₹1</span>
-                <span className="text-neutral-400 ml-2">per email</span>
-              </div>
+              <h4 className="text-neutral-100 font-semibold text-lg">Rajesh K.</h4>
             </div>
-            <ul className="space-y-3 mb-8">
-              <li className="flex items-center text-neutral-300">
-                <svg className="w-5 h-5 text-blue-400 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-                AI-generated cold emails
-              </li>
-              <li className="flex items-center text-neutral-300">
-                <svg className="w-5 h-5 text-blue-400 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-                All tone and style options
-              </li>
-              <li className="flex items-center text-neutral-300">
-                <svg className="w-5 h-5 text-blue-400 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-                Resume attachment support
-              </li>
-              <li className="flex items-center text-neutral-300">
-                <svg className="w-5 h-5 text-blue-400 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-                Secure payment via Razorpay
-              </li>
-            </ul>
-            <div className="text-center">
-              <span className="text-sm text-neutral-400">Pay only when you use</span>
-            </div>
+            
+            <p className="text-neutral-300 text-base leading-relaxed">
+              "Started using this about 3 months back. The cold email thing is genuinely useful - I was skeptical at first but it does save time. The free trial helped me figure out if it was worth it. Price is reasonable compared to other tools I've tried."
+            </p>
           </div>
-        </div>
 
-        {/* Additional Information */}
-        <div className="mt-12 text-center">
-          <div className="inline-flex items-center gap-6 text-sm text-neutral-400">
-            <div className="flex items-center gap-2">
-              <svg className="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-              No subscriptions
+          {/* Testimonial 2 */}
+          <div className="relative rounded-2xl border border-neutral-800 bg-neutral-950/60 p-8">
+            <div className="mb-6">
+              <h4 className="text-neutral-100 font-semibold text-lg">Ananya S.</h4>
             </div>
-            <div className="flex items-center gap-2">
-              <svg className="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-              Cancel anytime
-            </div>
-            <div className="flex items-center gap-2">
-              <svg className="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-              Secure payments
-            </div>
+            
+            <p className="text-neutral-300 text-base leading-relaxed">
+              "I send a lot of emails for work and this has made things easier. The AI is pretty good, not perfect but gets the job done most of the time. The inbox features are actually what I use more - the OTP thing and email summaries are really handy."
+            </p>
           </div>
-        </div>
 
-        {/* How It Works */}
-        <div className="mt-16">
-          <h3 className="text-2xl font-bold text-neutral-100 text-center mb-8">How It Works</h3>
-          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            <div className="text-center">
-              <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-white font-bold text-lg">1</span>
-              </div>
-              <h4 className="text-lg font-semibold text-neutral-100 mb-2">Sign Up Free</h4>
-              <p className="text-neutral-400 text-sm">Connect your Gmail account and get 5 free AI-generated cold emails instantly.</p>
+          {/* Testimonial 3 */}
+          <div className="relative rounded-2xl border border-neutral-800 bg-neutral-950/60 p-8">
+            <div className="mb-6">
+              <h4 className="text-neutral-100 font-semibold text-lg">Vikram P.</h4>
             </div>
-            <div className="text-center">
-              <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-white font-bold text-lg">2</span>
-              </div>
-              <h4 className="text-lg font-semibold text-neutral-100 mb-2">Generate Emails</h4>
-              <p className="text-neutral-400 text-sm">Use our AI to create personalized cold emails with your resume and preferences.</p>
-            </div>
-            <div className="text-center">
-              <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-white font-bold text-lg">3</span>
-              </div>
-              <h4 className="text-lg font-semibold text-neutral-100 mb-2">Pay As You Go</h4>
-              <p className="text-neutral-400 text-sm">After your free trial, pay only ₹1 per additional email. No hidden fees or subscriptions.</p>
-            </div>
+            
+            <p className="text-neutral-300 text-base leading-relaxed">
+              "Been using it for a while now. The email generation works well enough, though I usually edit it a bit before sending. What I really like is how it helps manage my inbox - finding OTPs instantly is a lifesaver. Worth trying out the free version first."
+            </p>
           </div>
         </div>
       </section>

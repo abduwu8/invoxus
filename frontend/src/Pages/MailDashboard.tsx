@@ -1,73 +1,11 @@
-function NewFeatureModal({ onClose, onTryCold }: { onClose: () => void; onTryCold: () => void }) {
-  return (
-    <div className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-black border border-gray-800 rounded-lg shadow-2xl">
-        {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-800">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-lg font-semibold text-white">What's New</div>
-              <div className="text-sm text-gray-400">Enhanced Cold Email Features</div>
-            </div>
-            <button 
-              onClick={onClose} 
-              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-800 text-gray-400 hover:text-white"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="px-6 py-6">
-          <div className="space-y-4 text-gray-300">
-            <div>
-              <div className="text-sm font-medium text-white mb-1">Enhanced TLDR Mode</div>
-              <div className="text-xs text-gray-400">Creative, memorable emails with unique tech metaphors and personality throughout both paragraphs - no more boring intros</div>
-            </div>
-
-            <div>
-              <div className="text-sm font-medium text-white mb-1">Optimized Email Structure</div>
-              <div className="text-xs text-gray-400">Streamlined to 2 focused paragraphs with strategic bullet points for maximum impact and readability</div>
-            </div>
-
-            <div>
-              <div className="text-sm font-medium text-white mb-1">Enhanced AI Intelligence</div>
-              <div className="text-xs text-gray-400">Smarter content generation with improved tone matching and completely unique content every time</div>
-            </div>
-
-            <div>
-              <div className="text-sm font-medium text-white mb-1">Resume Attachment Support</div>
-              <div className="text-xs text-gray-400">Upload and attach your resume (PDF, DOC, DOCX) directly to cold emails for complete professional presentation</div>
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="mt-8 flex gap-3">
-            <button 
-              onClick={onClose} 
-              className="flex-1 px-4 py-2 text-sm font-medium text-gray-400 bg-gray-900 border border-gray-700 rounded-lg hover:bg-gray-800 hover:text-white transition-colors"
-            >
-              Later
-            </button>
-            <button 
-              onClick={onTryCold} 
-              className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Try Now
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Star, Reply as LucideReply, Trash2, Wand2, Send, X, Plus, Inbox, MessageSquare, Sparkles, CheckSquare, KeyRound, LogOut, Menu, ArrowLeft, ThumbsUp, ThumbsDown, Paperclip, Check, RefreshCw } from 'lucide-react'
 import { PlaceholdersAndVanishInput } from '../components/ui/reveal'
 import { LoaderOne } from '../components/loader'
 import PaymentComponent from '../components/PaymentComponent'
 // Emoji picker removed for now
+// Note: Components like ChatModal, ComposeModal, etc. are defined inline below for now
+// TODO: Complete refactoring to extract all components to separate files
 
 type Importance = 'high' | 'medium' | 'low'
 
@@ -172,8 +110,8 @@ export default function MailDashboard() {
     portfolioLinks?: string;
     fitSummary?: string;
     ctaPreference?: string;
-    tone?: 'professional' | 'tldr';
-    experienceLevel?: 'fresher' | 'intern';
+      tone?: 'professional' | 'tldr' | 'casual' | 'formal' | 'enthusiastic' | 'confident'
+      experienceLevel?: 'fresher' | 'intern';
     availability?: string;
     location?: string;
     lowCost?: boolean;
@@ -1582,47 +1520,16 @@ export default function MailDashboard() {
   )
 }
 
-function ProfileHeader({ profile }: { profile: { name?: string; email?: string; picture?: string } | null }) {
-  const [open, setOpen] = useState(false)
+function getInitial(nameOrEmail: string): string {
+  const s = String(nameOrEmail || '').trim()
+  if (!s) return 'U'
+  const letter = s.match(/[A-Za-z]/)?.[0]
+  return (letter || s[0]).toUpperCase()
+}
+
+function SectionHeader({ title }: { title: string }) {
   return (
-    <div className="relative px-2 pt-1">
-      <button
-        className="w-full flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 hover:bg-neutral-900"
-        onClick={() => setOpen((v) => !v)}
-        aria-haspopup="menu"
-        aria-expanded={open}
-      >
-        <div className="flex items-center gap-2">
-          {profile?.picture ? (
-            <img src={profile.picture} alt="avatar" className="size-6 rounded-full object-cover" />
-          ) : (
-            <div className="size-6 rounded bg-blue-500/80 text-white grid place-items-center font-bold">
-              {getInitial(profile?.name || profile?.email || 'U')}
-            </div>
-          )}
-          <div className="text-left">
-            <div className="text-sm font-semibold">{profile?.name || 'Signed in'}</div>
-            <div className="text-xs text-neutral-400">{profile?.email || ''}</div>
-          </div>
-        </div>
-        <svg className={`size-3 transition-transform ${open ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.25a.75.75 0 0 1-1.06 0L5.21 8.29a.75.75 0 0 1 .02-1.08Z" clipRule="evenodd"/></svg>
-      </button>
-      {open ? (
-        <div className="absolute left-2 right-2 mt-1 rounded-lg border border-neutral-800 bg-neutral-950 shadow-lg z-10">
-          <button
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-neutral-900"
-            onClick={async () => {
-              try {
-                await fetch(`${API_BASE}/api/auth/logout`, { method: 'POST', credentials: 'include' })
-              } catch {}
-              window.location.href = '/'
-            }}
-          >
-            <LogOut className="size-4" /> Sign out
-          </button>
-        </div>
-      ) : null}
-    </div>
+    <div className="px-3 py-2 text-xs uppercase tracking-wide text-neutral-500 select-none">{title}</div>
   )
 }
 
@@ -1637,19 +1544,6 @@ function Avatar({ from, unread }: { from: string; unread?: boolean }) {
       <div className="size-7 rounded-full bg-neutral-800 flex items-center justify-center text-xs font-semibold">{letter}</div>
       {unread ? <span className="absolute -right-0.5 -bottom-0.5 size-2.5 rounded-full bg-blue-500 ring-2 ring-neutral-950" /> : null}
     </div>
-  )
-}
-
-function getInitial(nameOrEmail: string): string {
-  const s = String(nameOrEmail || '').trim()
-  if (!s) return 'U'
-  const letter = s.match(/[A-Za-z]/)?.[0]
-  return (letter || s[0]).toUpperCase()
-}
-
-function SectionHeader({ title }: { title: string }) {
-  return (
-    <div className="px-3 py-2 text-xs uppercase tracking-wide text-neutral-500 select-none">{title}</div>
   )
 }
 
@@ -1694,6 +1588,107 @@ function EmailListRow({
       <div className="text-xs text-neutral-400 line-clamp-1 transition-none select-none pointer-events-none">{m.from}</div>
       <div className="text-sm text-neutral-300 line-clamp-2 mt-1 transition-none select-none pointer-events-none">{m.snippet}</div>
     </li>
+  )
+}
+
+function ProfileHeader({ profile }: { profile: { name?: string; email?: string; picture?: string } | null }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="relative px-2 pt-1">
+      <button
+        className="w-full flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 hover:bg-neutral-900"
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+      >
+        <div className="flex items-center gap-2">
+          {profile?.picture ? (
+            <img src={profile.picture} alt="avatar" className="size-6 rounded-full object-cover" />
+          ) : (
+            <div className="size-6 rounded bg-blue-500/80 text-white grid place-items-center font-bold">
+              {getInitial(profile?.name || profile?.email || 'U')}
+            </div>
+          )}
+          <div className="text-left">
+            <div className="text-sm font-semibold">{profile?.name || 'Signed in'}</div>
+            <div className="text-xs text-neutral-400">{profile?.email || ''}</div>
+          </div>
+        </div>
+        <svg className={`size-3 transition-transform ${open ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.25a.75.75 0 0 1-1.06 0L5.21 8.29a.75.75 0 0 1 .02-1.08Z" clipRule="evenodd"/></svg>
+      </button>
+      {open ? (
+        <div className="absolute left-2 right-2 mt-1 rounded-lg border border-neutral-800 bg-neutral-950 shadow-lg z-10">
+          <button
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-neutral-900"
+            onClick={async () => {
+              try {
+                await fetch(`${API_BASE}/api/auth/logout`, { method: 'POST', credentials: 'include' })
+              } catch {}
+              window.location.href = '/'
+            }}
+          >
+            <LogOut className="size-4" /> Sign out
+          </button>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+function NewFeatureModal({ onClose, onTryCold }: { onClose: () => void; onTryCold: () => void }) {
+  return (
+    <div className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-black border border-gray-800 rounded-lg shadow-2xl">
+        <div className="px-6 py-4 border-b border-gray-800">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-lg font-semibold text-white">What's New</div>
+              <div className="text-sm text-gray-400">Enhanced Cold Email Features</div>
+            </div>
+            <button 
+              onClick={onClose} 
+              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-800 text-gray-400 hover:text-white"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+        <div className="px-6 py-6">
+          <div className="space-y-4 text-gray-300">
+            <div>
+              <div className="text-sm font-medium text-white mb-1">Enhanced TLDR Mode</div>
+              <div className="text-xs text-gray-400">Creative, memorable emails with unique tech metaphors and personality throughout both paragraphs - no more boring intros</div>
+            </div>
+            <div>
+              <div className="text-sm font-medium text-white mb-1">Optimized Email Structure</div>
+              <div className="text-xs text-gray-400">Streamlined to 2 focused paragraphs with strategic bullet points for maximum impact and readability</div>
+            </div>
+            <div>
+              <div className="text-sm font-medium text-white mb-1">Enhanced AI Intelligence</div>
+              <div className="text-xs text-gray-400">Smarter content generation with improved tone matching and completely unique content every time</div>
+            </div>
+            <div>
+              <div className="text-sm font-medium text-white mb-1">Resume Attachment Support</div>
+              <div className="text-xs text-gray-400">Upload and attach your resume (PDF, DOC, DOCX) directly to cold emails for complete professional presentation</div>
+            </div>
+          </div>
+          <div className="mt-8 flex gap-3">
+            <button 
+              onClick={onClose} 
+              className="flex-1 px-4 py-2 text-sm font-medium text-gray-400 bg-gray-900 border border-gray-700 rounded-lg hover:bg-gray-800 hover:text-white transition-colors"
+            >
+              Later
+            </button>
+            <button 
+              onClick={onTryCold} 
+              className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Try Now
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -2548,7 +2543,7 @@ function ComposeColdEmailModal({
       portfolioLinks?: string
       fitSummary?: string
       ctaPreference?: string
-      tone?: 'professional' | 'tldr'
+      tone?: 'professional' | 'tldr' | 'casual' | 'formal' | 'enthusiastic' | 'confident'
       experienceLevel?: 'fresher' | 'intern'
       availability?: string
       location?: string
@@ -2570,7 +2565,7 @@ function ComposeColdEmailModal({
   const [portfolioLinks, setPortfolioLinks] = useState('')
   const [fitSummary, setFitSummary] = useState('')
   const [ctaPreference, setCtaPreference] = useState('')
-  const [tone, setTone] = useState<'professional' | 'tldr'>('professional')
+  const [tone, setTone] = useState<'professional' | 'tldr' | 'casual' | 'formal' | 'enthusiastic' | 'confident'>('professional')
   const [experienceLevel, setExperienceLevel] = useState<'fresher' | 'intern'>('fresher')
   const [availability, setAvailability] = useState('')
   const [location, setLocation] = useState('')
@@ -2796,11 +2791,20 @@ function ComposeColdEmailModal({
                   <input value={ctaPreference} onChange={(e) => setCtaPreference(e.target.value)} className="w-full rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-neutral-700" placeholder="e.g. 10-min intro, quick reply, forward to owner" />
                 </div>
                 <div>
-                  <label className="block text-xs text-neutral-500 mb-1">Tone</label>
+                  <label className="block text-xs text-neutral-500 mb-1">Tone {paymentId && <span className="text-violet-400 text-[10px]">(Premium)</span>}</label>
                   <select value={tone} onChange={(e) => setTone(e.target.value as any)} className="w-full rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-neutral-700">
                     <option value="professional">Professional</option>
-                    <option value="tldr">TL;DR</option>
+                    <option value="tldr">TL;DR (Concise)</option>
+                    <option value="casual" disabled={!paymentId}>⭐ Casual & Friendly {!paymentId ? '(Premium)' : ''}</option>
+                    <option value="formal" disabled={!paymentId}>⭐ Formal & Executive {!paymentId ? '(Premium)' : ''}</option>
+                    <option value="enthusiastic" disabled={!paymentId}>⭐ Enthusiastic & Energetic {!paymentId ? '(Premium)' : ''}</option>
+                    <option value="confident" disabled={!paymentId}>⭐ Confident & Direct {!paymentId ? '(Premium)' : ''}</option>
                   </select>
+                  {!paymentId && ['casual', 'formal', 'enthusiastic', 'confident'].includes(tone) && (
+                    <div className="mt-1 text-[10px] text-amber-400">
+                      ⚠️ This tone requires payment. Click "Pay & Generate" below.
+                    </div>
+                  )}
                 </div>
               </div>
               <div>
@@ -2816,7 +2820,7 @@ function ComposeColdEmailModal({
               </label>
               {error ? <div className="text-xs text-red-400">{error}</div> : null}
               <div className="flex items-center gap-2 pt-1">
-                {!paymentId && (!usage || usage.remainingFreeGenerations === 0) ? (
+                {!paymentId && (['casual', 'formal', 'enthusiastic', 'confident'].includes(tone) || (!usage || usage.remainingFreeGenerations === 0)) ? (
                   <button
                     disabled={loading || toInvalid}
                     className="inline-flex items-center gap-2 rounded-md bg-blue-600 hover:bg-blue-700 px-3 py-1.5 text-sm text-white disabled:opacity-50"
@@ -2879,6 +2883,8 @@ function ComposeColdEmailModal({
                 )}
                 <div className="text-xs text-neutral-500">
                   {paymentId ? 'AI creates a short, tailored draft.' : 
+                   ['casual', 'formal', 'enthusiastic', 'confident'].includes(tone) ? 
+                   '⭐ Premium tone selected - payment required' :
                    usage && usage.remainingFreeGenerations > 0 ? 
                    `Free generation available (${usage.remainingFreeGenerations} left)` : 
                    'Payment required to generate email.'}

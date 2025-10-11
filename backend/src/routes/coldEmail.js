@@ -381,18 +381,82 @@ ${experienceLevel === 'intern' ?
 
 ${tone === 'tldr' ? 
   'TLDR: Generate everything in TLDR style - be innovative, fun, and memorable throughout BOTH paragraphs while staying professional. Use creative tech metaphors, show personality, and make the email stand out. Start with a unique, creative opener like "TL;DR: I\'m the developer your team didn\'t know they needed" or "TL;DR: Ready to turn your tech stack into a powerhouse?" - be creative and memorable. In BOTH paragraphs, use phrases like "code wizard", "bug slayer", "performance optimizer", creative analogies, and tech metaphors. Use bullet points whenever necessary to highlight key skills and achievements. Make HR think "this person is creative and would bring fresh energy to our team". NEVER use the same opener twice - always create something completely new and unique.' :
+  tone === 'casual' ?
+  'CASUAL: Generate everything in casual, friendly style - be approachable, conversational, and warm while maintaining professionalism. Use friendly language like "I\'d love to", "excited about", "great fit". Write as if talking to a friendly colleague. Use contractions (I\'m, I\'d, you\'re) naturally. Keep it relaxed but respectful. Show genuine interest and enthusiasm without being over-the-top.' :
+  tone === 'formal' ?
+  'FORMAL: Generate everything in formal, executive style - be polished, sophisticated, and highly professional. Use formal language, complete sentences, no contractions. Emphasize credentials, achievements, and qualifications with precision. Write as if addressing C-level executives. Use phrases like "I would be honored", "distinguished background", "extensive experience". Maintain dignity and respect throughout.' :
+  tone === 'enthusiastic' ?
+  'ENTHUSIASTIC: Generate everything with high energy and genuine excitement - be passionate, motivated, and eager while staying professional. Use energetic language like "thrilled", "excited", "passionate about", "can\'t wait to". Show genuine enthusiasm for the company and role. Use exclamation marks sparingly but effectively. Convey positive energy that\'s infectious but not overwhelming. Make them feel your genuine interest and drive.' :
+  tone === 'confident' ?
+  'CONFIDENT: Generate everything with strong confidence and directness - be assertive, self-assured, and results-focused. Use confident language like "I will", "I excel at", "proven track record", "consistently deliver". State achievements boldly without arrogance. Be direct and to-the-point. Show you know your worth and what you bring. No hedging or uncertain language - be clear and decisive.' :
   'PROFESSIONAL: Generate everything in professional style - be results-focused, confident, specific. Use clear value propositions and bullet points whenever necessary to highlight key skills and achievements.'}
 
-EXAMPLES:
-- Opener: "I've been following [Company]'s work in [industry] and wanted to connect with your talent team."
-- Education: "• B.S. Computer Science, Stanford University, 2020" or "As a Computer Science graduate from Stanford..."
-- Resume: "I've attached my resume for your review" or "Please find my resume attached for your consideration"
-- Links: "You can view my portfolio and experience here: [LinkedIn] [GitHub]"
+TONE-SPECIFIC EXAMPLES & CRITICAL NOTES:
 
-CRITICAL FOR TLDR TONE:
-- First paragraph: Start with creative TL;DR opener, maintain fun tech metaphors throughout
-- Second paragraph: Continue with creative language, tech analogies, and personality - don't fall back to boring professional tone
-- Both paragraphs should feel cohesive with the same creative energy
+${tone === 'professional' ? `
+PROFESSIONAL EXAMPLES:
+- Opener: "I've been following [Company]'s work in [industry] and wanted to connect with your talent team."
+- Body: "With expertise in [skills], I've successfully [achievement]. My background in [area] has equipped me to deliver measurable results."
+- Closing: "I'd welcome the opportunity to discuss how my experience aligns with your team's goals."
+` : tone === 'tldr' ? `
+TLDR EXAMPLES:
+- Opener: "TL;DR: I'm the full-stack developer who turns coffee into scalable solutions ☕→🚀"
+- Body: "Think of me as your team's Swiss Army knife for development - React wizard by day, Node.js ninja by night. I've shipped [achievement] and debugged code that would make senior devs cry."
+- Style: Keep the creative energy THROUGHOUT both paragraphs - no dropping into boring professional tone midway
+
+CRITICAL FOR TLDR:
+- First paragraph: Creative TL;DR opener + fun tech metaphors
+- Second paragraph: MORE creative language, tech analogies, personality
+- Both paragraphs = same high creative energy
+- Use phrases: "code wizard", "bug slayer", "performance optimizer"
+` : tone === 'casual' ? `
+CASUAL EXAMPLES:
+- Opener: "Hey there! I've been following [Company]'s journey and I'd love to connect with your team."
+- Body: "I'm pretty excited about what you're building. I've got experience in [skills] and honestly, I think I'd be a great fit for your team."
+- Closing: "Would love to chat more about this! Let me know if you're interested."
+
+CRITICAL FOR CASUAL:
+- Use contractions naturally (I'm, I'd, you're, can't, won't)
+- Write like you're emailing a friend (but keep it professional)
+- Use "pretty", "really", "honestly" to sound conversational
+- Avoid stiff formal language
+` : tone === 'formal' ? `
+FORMAL EXAMPLES:
+- Opener: "I am writing to express my interest in connecting with your distinguished talent acquisition team."
+- Body: "I possess extensive experience in [skills] and have consistently demonstrated excellence in [area]. My credentials include [achievement], which I believe would be of significant value to your organization."
+- Closing: "I would be honored to discuss how my qualifications align with your organization's objectives."
+
+CRITICAL FOR FORMAL:
+- NO contractions (use "I am" not "I'm", "I would" not "I'd")
+- Use elevated vocabulary: "possess", "demonstrate", "credentials"
+- Complete, sophisticated sentences
+- Address as if writing to executives or board members
+` : tone === 'enthusiastic' ? `
+ENTHUSIASTIC EXAMPLES:
+- Opener: "I'm so excited to reach out! I've been following [Company]'s incredible work and I'm passionate about what you're building."
+- Body: "I absolutely love working with [skills]! I've had the amazing opportunity to [achievement], and I'm thrilled about the possibility of bringing that energy to your team."
+- Closing: "I can't wait to hear from you and discuss how I can contribute to your awesome team!"
+
+CRITICAL FOR ENTHUSIASTIC:
+- Use energetic words: "excited", "thrilled", "passionate", "love", "amazing", "incredible"
+- 1-2 exclamation marks per paragraph (don't overdo it!)
+- Show genuine emotion and eagerness
+- Convey infectious positive energy
+` : tone === 'confident' ? `
+CONFIDENT EXAMPLES:
+- Opener: "I'm reaching out because I know I can deliver exceptional value to your team."
+- Body: "I excel at [skills] and consistently deliver results. My track record includes [achievement] - I don't just meet expectations, I exceed them."
+- Closing: "I'm confident we should talk. I know what I bring to the table and I'm ready to prove it."
+
+CRITICAL FOR CONFIDENT:
+- Use strong, assertive language: "I will", "I excel", "I consistently"
+- State achievements boldly (no "I think" or "maybe")
+- Be direct - no hedging, no uncertainty
+- Show you know your worth without arrogance
+` : `
+PROFESSIONAL EXAMPLES:
+- Standard networking approach with clear value propositions
+`}
 
 Return ONLY this JSON format:
 {
@@ -430,9 +494,19 @@ REQUIREMENTS:
 - NEVER use: "I'm applying for", "I'm interested in applying", "I'm thrilled to apply"
 - Be unique and creative every time - NEVER repeat the same opener or phrases
 
-TLDR tone: Generate everything in TLDR style - be innovative, fun, and memorable throughout BOTH paragraphs while staying professional. Use creative tech metaphors, show personality, and make the email stand out. Start with a unique, creative opener like "TL;DR: I'm the developer your team didn't know they needed" or "TL;DR: Ready to turn your tech stack into a powerhouse?" - be creative and memorable. In BOTH paragraphs, use phrases like "code wizard", "bug slayer", "performance optimizer", creative analogies, and tech metaphors. Use bullet points whenever necessary to highlight key skills and achievements. Make HR think "this person is creative and would bring fresh energy to our team". NEVER use the same opener twice - always create something completely new and unique.
+TONE GUIDELINES:
 
-PROFESSIONAL tone: Generate everything in professional style - be results-focused, confident, specific. Use bullet points whenever necessary to highlight key skills and achievements.` 
+PROFESSIONAL: Results-focused, confident, specific. Use clear value propositions and bullet points to highlight key skills and achievements.
+
+TLDR: Innovative, fun, and memorable throughout BOTH paragraphs while staying professional. Use creative tech metaphors, show personality. Start with unique, creative openers like "TL;DR: I'm the developer your team didn't know they needed" or "TL;DR: Ready to turn your tech stack into a powerhouse?". Use phrases like "code wizard", "bug slayer", "performance optimizer". Make HR think "this person is creative and would bring fresh energy". NEVER repeat the same opener.
+
+CASUAL: Approachable, conversational, warm while maintaining professionalism. Use friendly language like "I'd love to", "excited about", "great fit". Write as if talking to a friendly colleague. Use contractions (I'm, I'd, you're) naturally. Keep it relaxed but respectful.
+
+FORMAL: Polished, sophisticated, highly professional. Use formal language, complete sentences, no contractions. Emphasize credentials and qualifications with precision. Write as if addressing C-level executives. Use phrases like "I would be honored", "distinguished background", "extensive experience".
+
+ENTHUSIASTIC: High energy and genuine excitement - passionate, motivated, eager while staying professional. Use energetic language like "thrilled", "excited", "passionate about", "can't wait to". Show genuine enthusiasm for the company and role. Use exclamation marks sparingly but effectively. Convey infectious positive energy.
+
+CONFIDENT: Strong confidence and directness - assertive, self-assured, results-focused. Use confident language like "I will", "I excel at", "proven track record", "consistently deliver". State achievements boldly without arrogance. Be direct and to-the-point. Show you know your worth. No hedging or uncertain language.` 
           },
           { role: 'user', content: composePrompt },
         ],
@@ -580,8 +654,42 @@ router.post('/generate', upload.single('resumeFile'), checkUsageAndPayment, asyn
       throw new Error('All AI models are currently unavailable. Please try again in a few moments.');
     }
     const lengthBounds = [120, 160];
-    const maxTokens = lowCost ? 1000 : (tone === 'tldr' ? 600 : 800); // High cost mode: more tokens, TLDR optimized
-    const temperature = lowCost ? 0.8 : (tone === 'tldr' ? 0.7 : 0.6); // Optimized temperatures for each tone
+    
+    // Tone-specific token and temperature settings for unique outputs
+    let maxTokens, temperature;
+    
+    if (lowCost) {
+      maxTokens = 1000;
+      temperature = 0.8;
+    } else {
+      switch(tone) {
+        case 'tldr':
+          maxTokens = 600;
+          temperature = 0.8; // High creativity for fun, unique metaphors
+          break;
+        case 'casual':
+          maxTokens = 700;
+          temperature = 0.7; // Moderate creativity for conversational tone
+          break;
+        case 'formal':
+          maxTokens = 800;
+          temperature = 0.4; // Low creativity for precise, polished language
+          break;
+        case 'enthusiastic':
+          maxTokens = 750;
+          temperature = 0.75; // Higher creativity for energetic, varied expressions
+          break;
+        case 'confident':
+          maxTokens = 750;
+          temperature = 0.5; // Moderate-low for assertive, direct language
+          break;
+        case 'professional':
+        default:
+          maxTokens = 800;
+          temperature = 0.6; // Balanced for professional tone
+          break;
+      }
+    }
 
     // First compose pass (AI only) - enhanced retry logic
     let draft = null;
