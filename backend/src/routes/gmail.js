@@ -1061,28 +1061,56 @@ router.post('/messages/:id/suggest-reply', async (req, res) => {
     if (!groqApiKey) return res.status(500).json({ error: 'Server missing GROQ_API_KEY' });
 
     const groq = new Groq({ apiKey: groqApiKey });
-    const prompt = `You are an assistant drafting professional email replies.
-Return STRICT JSON with key: reply (string). Keep under 180 words. Be concise, polite, and actionable.
+    const prompt = `You are an intelligent email reply assistant. Generate a professional, contextual reply.
 
-Original email headers:
+ORIGINAL EMAIL:
 Subject: ${headers['Subject'] || ''}
 From: ${headers['From'] || ''}
 To: ${headers['To'] || ''}
 Date: ${headers['Date'] || ''}
+Body: ${plain.slice(0, 8000)}
 
-Original email body (plain text):
-${plain.slice(0, 8000)}
+REPLY REQUIREMENTS:
+1. CONTEXT UNDERSTANDING:
+   - Understand the sender's intent and tone
+   - Identify questions that need answers
+   - Note any requests or action items
+   - Recognize urgency level
 
-JSON only.`;
+2. REPLY STRUCTURE:
+   - Professional greeting appropriate to relationship
+   - Directly address all points raised
+   - Provide clear, specific answers
+   - Offer next steps if relevant
+   - Professional closing
+
+3. TONE & STYLE:
+   - Match the formality level of original email
+   - Be warm yet professional
+   - Show understanding and empathy
+   - Be concise but thorough (150-200 words)
+   - Use active voice
+
+4. SMART FEATURES:
+   - Reference specific points from their email
+   - Provide helpful suggestions
+   - Set clear expectations
+   - Include timeline if relevant
+
+Return JSON: { 
+  "reply": "Complete email reply with greeting, body, and closing",
+  "tone": "formal" | "professional" | "casual",
+  "suggestedSubject": "Re: appropriate subject"
+}`;
 
     const completion = await groq.chat.completions.create({
-      model: 'openai/gpt-oss-20b',
+      model: 'llama-3.3-70b-versatile',
       messages: [
-        { role: 'system', content: 'Return strict JSON only.' },
+        { role: 'system', content: 'You are an expert at writing professional, contextual email replies. Always return valid JSON.' },
         { role: 'user', content: prompt },
       ],
-      temperature: 0.3,
-      max_tokens: 400,
+      temperature: 0.6,
+      max_tokens: 600,
     });
 
     const text = completion.choices?.[0]?.message?.content || '{}';

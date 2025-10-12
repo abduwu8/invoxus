@@ -31,10 +31,11 @@ router.post('/google', async (req, res) => {
     const { data: userinfo } = await oauth2.userinfo.get();
 
     req.session.tokens = tokens;
+    req.session.provider = 'google';
     try {
       await UserToken.findOneAndUpdate(
-        { userId: userinfo.id },
-        { userId: userinfo.id, email: userinfo.email, tokens },
+        { userId: userinfo.id, provider: 'google' },
+        { userId: userinfo.id, email: userinfo.email, provider: 'google', tokens },
         { upsert: true, new: true }
       );
     } catch (e) {
@@ -45,6 +46,7 @@ router.post('/google', async (req, res) => {
       email: userinfo.email,
       name: userinfo.name,
       picture: userinfo.picture,
+      provider: 'google',
     };
 
     res.json({ ok: true, profile: req.session.userProfile });

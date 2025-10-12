@@ -15,6 +15,7 @@ type GoogleCredentialResponse = {
 export default function Login({ onLoggedIn }: { onLoggedIn?: () => void }) {
   const buttonDivRef = useRef<HTMLDivElement | null>(null)
   const [configError, setConfigError] = useState<string | null>(null)
+  const [isLoadingMicrosoft, setIsLoadingMicrosoft] = useState(false)
 
   useEffect(() => {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined
@@ -100,6 +101,76 @@ export default function Login({ onLoggedIn }: { onLoggedIn?: () => void }) {
     initialize()
   }, [])
 
+  // Handle Microsoft/Outlook login
+  const handleMicrosoftLogin = async () => {
+    try {
+      setIsLoadingMicrosoft(true)
+      
+      // Get authorization URL from backend
+      const response = await fetch(`${API_BASE}/api/auth/microsoft/login`, {
+        method: 'GET',
+        credentials: 'include',
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to initiate Microsoft login')
+      }
+      
+      const { authUrl } = await response.json()
+      
+      // Open popup for Microsoft login
+      const width = 500
+      const height = 600
+      const left = window.screen.width / 2 - width / 2
+      const top = window.screen.height / 2 - height / 2
+      
+      const popup = window.open(
+        authUrl,
+        'Microsoft Login',
+        `width=${width},height=${height},left=${left},top=${top}`
+      )
+      
+      // Listen for the OAuth callback
+      const handleMessage = async (event: MessageEvent) => {
+        if (event.data?.type === 'microsoft-oauth-success') {
+          const { code } = event.data
+          
+          // Exchange code for tokens via backend
+          const authResponse = await fetch(`${API_BASE}/api/auth/microsoft/callback`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code }),
+          })
+          
+          if (!authResponse.ok) {
+            throw new Error('Failed to authenticate with Microsoft')
+          }
+          
+          window.removeEventListener('message', handleMessage)
+          popup?.close()
+          onLoggedIn?.()
+        }
+      }
+      
+      window.addEventListener('message', handleMessage)
+      
+      // Check if popup was closed
+      const checkClosed = setInterval(() => {
+        if (popup?.closed) {
+          clearInterval(checkClosed)
+          window.removeEventListener('message', handleMessage)
+          setIsLoadingMicrosoft(false)
+        }
+      }, 500)
+      
+    } catch (error) {
+      console.error('Microsoft login error:', error)
+      import('sonner').then(({ toast }) => toast.error('Failed to sign in with Microsoft'))
+      setIsLoadingMicrosoft(false)
+    }
+  }
+
   return (
     <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'center' }}>
@@ -120,9 +191,49 @@ export default function Login({ onLoggedIn }: { onLoggedIn?: () => void }) {
             borderRadius: 6,
             padding: '10px 14px',
             cursor: 'pointer',
+            fontSize: 14,
+            fontWeight: 500,
           }}
         >
           Continue with Google to view Gmail
+        </button>
+
+        <div style={{ margin: '8px 0', color: '#666', fontSize: 14 }}>or</div>
+
+        <button
+          onClick={handleMicrosoftLogin}
+          disabled={isLoadingMicrosoft}
+          style={{
+            background: '#0078d4',
+            color: 'white',
+            border: 0,
+            borderRadius: 6,
+            padding: '10px 14px',
+            cursor: isLoadingMicrosoft ? 'not-allowed' : 'pointer',
+            fontSize: 14,
+            fontWeight: 500,
+            opacity: isLoadingMicrosoft ? 0.7 : 1,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+          }}
+        >
+          {isLoadingMicrosoft ? (
+            <>
+              <span style={{ animation: 'spin 1s linear infinite', display: 'inline-block' }}>⟳</span>
+              Connecting...
+            </>
+          ) : (
+            <>
+              <svg width="20" height="20" viewBox="0 0 23 23" fill="none">
+                <rect x="0" y="0" width="11" height="11" fill="#f25022"/>
+                <rect x="12" y="0" width="11" height="11" fill="#7fba00"/>
+                <rect x="0" y="12" width="11" height="11" fill="#00a4ef"/>
+                <rect x="12" y="12" width="11" height="11" fill="#ffb900"/>
+              </svg>
+              Continue with Microsoft/Outlook
+            </>
+          )}
         </button>
       </div>
     </div>

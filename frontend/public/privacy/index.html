@@ -31,62 +31,109 @@
       <div class="card">
         <p>
           Your privacy matters. This policy explains how Invoxus accesses, uses, stores, shares, and deletes data, including
-          Google user data, to deliver the product experience.
+          Google Gmail and Microsoft Outlook user data, to deliver the product experience.
         </p>
 
         <h2>1. Data Access & Scope</h2>
         <ul>
           <li>
-            With your consent, Invoxus accesses Gmail to list messages, read metadata and content for features like summaries,
+            <strong>Gmail Integration:</strong> With your consent, Invoxus accesses Gmail to list messages, read metadata and content for features like summaries,
             draft and send emails you approve, and help with unsubscribe or cleanup.
           </li>
+          <li>
+            <strong>Outlook Integration:</strong> With your consent, Invoxus accesses Microsoft Outlook via Microsoft Graph API to read, send, and manage emails,
+            providing the same features available for Gmail users. We only access data necessary for the features you use.
+          </li>
           <li>We request the minimum scopes required and use them only for the stated, user‑visible features.</li>
-          <li>We do not sell Google user data or use it for advertising.</li>
+          <li>We do not sell user data from any email provider or use it for advertising purposes.</li>
         </ul>
 
         <h2>2. Storage</h2>
         <ul>
           <li>
-            Session credentials are stored in secure cookies to keep you signed in. Where you explicitly enable background
-            actions, we may persist tokens in our database to execute the requested jobs.
+            <strong>Authentication:</strong> Session credentials (OAuth tokens) are stored in secure cookies to keep you signed in. For Gmail, tokens may be stored in our database
+            when you enable background actions. For Outlook, tokens are refreshed as needed to maintain access.
           </li>
           <li>
-            Email content is not stored by default. Drafts or categories you explicitly save are stored to provide the feature.
+            <strong>Email Content:</strong> Email content is not stored permanently by default. Drafts, categories, or chat history you explicitly save
+            are stored to provide those features.
           </li>
-        </ul>
-
-        <h2>3. Sharing</h2>
-        <ul>
           <li>
-            We do not share Google user data with third parties, except service providers strictly necessary to operate the
-            service (e.g., infrastructure, background job processing) and bound by confidentiality.
+            <strong>User Preferences:</strong> We store your account preferences, usage statistics, and AI chat history to improve your experience.
           </li>
         </ul>
 
-        <h2>4. Deletion & Revocation</h2>
+        <h2>3. Payment & Transactions</h2>
         <ul>
-          <li>You can revoke Invoxus access at any time from your Google Account security settings.</li>
           <li>
-            You may request deletion of stored tokens and app data by emailing
+            <strong>Cold Email Generation:</strong> Users receive 5 free AI-generated cold emails. Additional generations require a payment of ₹1 per email.
+          </li>
+          <li>
+            <strong>Payment Processing:</strong> All payments are processed securely through Razorpay. We do not store your complete credit card or banking details.
+          </li>
+          <li>
+            <strong>Transaction Records:</strong> We maintain records of payment transactions (payment ID, amount, status, timestamp) for service delivery,
+            customer support, and legal compliance purposes.
+          </li>
+          <li>
+            <strong>Usage Tracking:</strong> We track usage of paid features (cold email generations) linked to your email address or session to enforce
+            limits and prevent abuse.
+          </li>
+          <li>
+            <strong>Refunds:</strong> Payment transactions are generally non-refundable. For questions about charges, contact us at
             <a href="mailto:contact@invoxus.email">contact@invoxus.email</a>.
           </li>
         </ul>
 
-        <h2>5. Security & Logs</h2>
+        <h2>4. Sharing</h2>
         <ul>
-          <li>We apply industry‑standard safeguards. Diagnostic logs, if used, exclude message content and PII.</li>
+          <li>
+            We do not share user data (Gmail or Outlook) with third parties, except:
+            <ul>
+              <li><strong>Service Providers:</strong> Infrastructure providers, payment processors (Razorpay), and background job processors bound by confidentiality.</li>
+              <li><strong>Legal Requirements:</strong> When required by law or to protect our rights and safety.</li>
+            </ul>
+          </li>
+          <li>AI processing is performed using Groq API and OpenAI API, which process email content temporarily to generate responses but do not store it.</li>
         </ul>
 
-        <h2>6. Changes to this Policy</h2>
+        <h2>5. Deletion & Revocation</h2>
+        <ul>
+          <li><strong>Gmail:</strong> You can revoke Invoxus access at any time from your Google Account security settings.</li>
+          <li><strong>Outlook:</strong> You can revoke Invoxus access from your Microsoft Account permissions page.</li>
+          <li>
+            <strong>Data Deletion:</strong> You may request deletion of stored tokens, chat history, payment records, and app data by emailing
+            <a href="mailto:contact@invoxus.email">contact@invoxus.email</a>. We will delete your data within 30 days unless required to retain it for legal compliance.
+          </li>
+          <li>Note: Payment transaction records may be retained for up to 7 years for tax and legal compliance purposes.</li>
+        </ul>
+
+        <h2>6. Security & Logs</h2>
+        <ul>
+          <li>We apply industry‑standard security safeguards including encryption in transit (HTTPS) and secure token storage.</li>
+          <li>Diagnostic logs, if used, exclude message content and personally identifiable information (PII).</li>
+          <li>Payment data is handled securely through PCI-DSS compliant payment processors.</li>
+        </ul>
+
+        <h2>7. Third-Party Services</h2>
+        <ul>
+          <li><strong>Google OAuth:</strong> For Gmail authentication and access.</li>
+          <li><strong>Microsoft OAuth:</strong> For Outlook authentication and access via Microsoft Graph API.</li>
+          <li><strong>Razorpay:</strong> For secure payment processing (subject to Razorpay's privacy policy).</li>
+          <li><strong>Groq & OpenAI:</strong> For AI-powered email features (subject to their respective privacy policies).</li>
+        </ul>
+
+        <h2>8. Changes to this Policy</h2>
         <ul>
           <li>
             We will update this page if our data practices change and will notify users in‑product when material changes occur.
           </li>
+          <li>Check the "Last updated" date at the top of this page to see when changes were made.</li>
         </ul>
 
-        <h2>7. Contact</h2>
+        <h2>9. Contact</h2>
         <p>
-          Questions or requests? Contact <a href="mailto:contact@invoxus.email">contact@invoxus.email</a>.
+          Questions, concerns, or data deletion requests? Contact <a href="mailto:contact@invoxus.email">contact@invoxus.email</a>.
         </p>
       </div>
       <p class="muted" style="margin-top: 16px; text-align: center;">

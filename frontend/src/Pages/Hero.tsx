@@ -95,6 +95,66 @@ export default function Hero({ onLoggedIn }: Props) {
       import('sonner').then(({ toast }) => toast.error('Failed to start Google sign in'))
     }
   }
+
+  async function startMicrosoftAuth() {
+    try {
+      const response = await fetch(`${API_BASE}/api/auth/microsoft/login`, {
+        method: 'GET',
+        credentials: 'include',
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to initiate Microsoft login')
+      }
+      
+      const { authUrl } = await response.json()
+      
+      const width = 500
+      const height = 600
+      const left = window.screen.width / 2 - width / 2
+      const top = window.screen.height / 2 - height / 2
+      
+      const popup = window.open(
+        authUrl,
+        'Microsoft Login',
+        `width=${width},height=${height},left=${left},top=${top}`
+      )
+      
+      const handleMessage = async (event: MessageEvent) => {
+        if (event.data?.type === 'microsoft-oauth-success') {
+          const { code } = event.data
+          
+          const authResponse = await fetch(`${API_BASE}/api/auth/microsoft/callback`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code }),
+          })
+          
+          if (!authResponse.ok) {
+            throw new Error('Failed to authenticate with Microsoft')
+          }
+          
+          window.removeEventListener('message', handleMessage)
+          popup?.close()
+          onLoggedIn?.()
+        }
+      }
+      
+      window.addEventListener('message', handleMessage)
+      
+      const checkClosed = setInterval(() => {
+        if (popup?.closed) {
+          clearInterval(checkClosed)
+          window.removeEventListener('message', handleMessage)
+        }
+      }, 500)
+      
+    } catch (e) {
+      console.error(e)
+      import('sonner').then(({ toast }) => toast.error('Failed to start Microsoft sign in'))
+    }
+  }
   return (
     <GradientBackground>
       {/* Top sticky banner */}
@@ -121,14 +181,28 @@ export default function Hero({ onLoggedIn }: Props) {
         </p>
 
         {/* Sign in CTA */}
-        <div className="mt-8 flex items-center justify-center gap-3">
-          <button
-            onClick={startGoogleAuth}
-            className="inline-flex items-center gap-2 rounded-lg border border-neutral-800 bg-neutral-950/60 hover:bg-neutral-900 px-4 py-2 text-sm text-neutral-100"
-          >
-            <FcGoogle className="h-5 w-5" />
-            Sign in with Google
-          </button>
+        <div className="mt-8 flex flex-col items-center justify-center gap-3">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={startGoogleAuth}
+              className="inline-flex items-center gap-2 rounded-lg border border-neutral-800 bg-neutral-950/60 hover:bg-neutral-900 px-4 py-2 text-sm text-neutral-100"
+            >
+              <FcGoogle className="h-5 w-5" />
+              Sign in with Google
+            </button>
+            <button
+              onClick={startMicrosoftAuth}
+              className="inline-flex items-center gap-2 rounded-lg border border-neutral-800 bg-neutral-950/60 hover:bg-neutral-900 px-4 py-2 text-sm text-neutral-100"
+            >
+              <svg width="20" height="20" viewBox="0 0 23 23" fill="none">
+                <rect x="0" y="0" width="11" height="11" fill="#f25022"/>
+                <rect x="12" y="0" width="11" height="11" fill="#7fba00"/>
+                <rect x="0" y="12" width="11" height="11" fill="#00a4ef"/>
+                <rect x="12" y="12" width="11" height="11" fill="#ffb900"/>
+              </svg>
+              Sign in with Outlook
+            </button>
+          </div>
           <a
             href={(import.meta.env.VITE_GITHUB_REPO_URL as string | undefined) || 'https://github.com/abduwu8/invoxus'}
             target="_blank"
@@ -177,7 +251,6 @@ export default function Hero({ onLoggedIn }: Props) {
               muted
               playsInline
               className="w-full h-auto block md:hidden"
-              poster={new URL('../images/Screenshot 2025-08-10 182210.png', import.meta.url).toString()}
             />
             {/* Desktop video */}
             <video
@@ -187,7 +260,6 @@ export default function Hero({ onLoggedIn }: Props) {
               muted
               playsInline
               className="w-full h-auto hidden md:block"
-              poster={new URL('../images/Screenshot 2025-08-10 182210.png', import.meta.url).toString()}
             />
           </div>
         </div>
@@ -555,13 +627,28 @@ export default function Hero({ onLoggedIn }: Props) {
           <p className="mt-6 text-neutral-100/70 text-lg sm:text-xl md:text-2xl max-w-4xl mx-auto">
           Streamline your inbox in minutes, not hours—with Invoxus.
           </p>
-          <div className="mt-10 flex flex-col items-center justify-center gap-3">
-            <button
-              onClick={startGoogleAuth}
-              className="inline-flex items-center gap-2 rounded-lg border border-neutral-800 bg-neutral-950/70 hover:bg-neutral-900 px-5 py-2.5 text-sm sm:text-base text-neutral-100 shadow-sm"
-            >
-              Get Started
-            </button>
+          <div className="mt-10 flex flex-col items-center justify-center gap-4">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={startGoogleAuth}
+                className="inline-flex items-center gap-2 rounded-lg border border-neutral-800 bg-neutral-950/70 hover:bg-neutral-900 px-5 py-2.5 text-sm sm:text-base text-neutral-100 shadow-sm"
+              >
+                <FcGoogle className="h-5 w-5" />
+                Get Started with Google
+              </button>
+              <button
+                onClick={startMicrosoftAuth}
+                className="inline-flex items-center gap-2 rounded-lg border border-neutral-800 bg-neutral-950/70 hover:bg-neutral-900 px-5 py-2.5 text-sm sm:text-base text-neutral-100 shadow-sm"
+              >
+                <svg width="20" height="20" viewBox="0 0 23 23" fill="none">
+                  <rect x="0" y="0" width="11" height="11" fill="#f25022"/>
+                  <rect x="12" y="0" width="11" height="11" fill="#7fba00"/>
+                  <rect x="0" y="12" width="11" height="11" fill="#00a4ef"/>
+                  <rect x="12" y="12" width="11" height="11" fill="#ffb900"/>
+                </svg>
+                Get Started with Outlook
+              </button>
+            </div>
             <p className="text-neutral-100/60 text-xs">
               By getting started, you agree to our{' '}
               <a

@@ -8,6 +8,8 @@ const { connectToDatabase } = require('./config/db');
 
 const authRoutes = require('./routes/auth');
 const gmailRoutes = require('./routes/gmail');
+const microsoftAuthRoutes = require('./routes/microsoft-auth');
+const outlookRoutes = require('./routes/outlook');
 const scheduleRoutes = require('./routes/schedule');
 const inngestHandler = require('./inngest/handler');
 const chatRoutes = require('./routes/chat');
@@ -74,7 +76,9 @@ if (process.env.NODE_ENV !== 'production') {
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/auth/microsoft', microsoftAuthRoutes);
 app.use('/api/gmail', gmailRoutes);
+app.use('/api/outlook', outlookRoutes);
 app.use('/api/schedule', scheduleRoutes);
 app.use('/api/inngest', inngestHandler);
 app.use('/api/chat', chatRoutes);

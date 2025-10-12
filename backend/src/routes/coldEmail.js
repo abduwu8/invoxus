@@ -1,9 +1,9 @@
 const express = require('express');
-const { google } = require('googleapis');
 const Groq = require('groq-sdk');
 const multer = require('multer');
 const Payment = require('../models/Payment');
 const Usage = require('../models/Usage');
+const EmailProvider = require('../services/emailProvider');
 
 const router = express.Router();
 
@@ -238,14 +238,6 @@ CRITICAL: Return ONLY valid JSON, no other text, no code blocks, no explanations
   }
 });
 
-function createOAuthClientFromSession(tokens) {
-  const clientId = process.env.GOOGLE_CLIENT_ID;
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  const oauth2Client = new google.auth.OAuth2(clientId, clientSecret, 'postmessage');
-  oauth2Client.setCredentials(tokens);
-  return oauth2Client;
-}
-
 // Validate that email body has exactly 2 paragraphs
 function validateTwoParagraphs(body) {
   if (!body || typeof body !== 'string') return false;
@@ -469,7 +461,7 @@ Return ONLY this JSON format:
   let resp;
   let attempts = 0;
   const maxAttempts = 5;
-  const modelsToTry = [model, 'llama-3.1-8b-instant', 'llama-3.1-70b-versatile'];
+  const modelsToTry = [model, 'llama-3.1-8b-instant', 'llama-3.3-70b-versatile'];
   
   while (attempts < maxAttempts) {
     const currentModel = modelsToTry[attempts % modelsToTry.length];
@@ -624,12 +616,12 @@ router.post('/generate', upload.single('resumeFile'), checkUsageAndPayment, asyn
 
     const groq = new Groq({ apiKey: groqApiKey });
     const primaryModel = process.env.GROQ_MODEL || 'llama-3.1-8b-instant';
-    const fallbackModel = 'llama-3.1-70b-versatile';
+    const fallbackModel = 'llama-3.3-70b-versatile';
     let model = primaryModel;
     
     // Test API key with a simple call and retry with different models if needed
     let modelWorking = false;
-    const modelsToTry = [primaryModel, fallbackModel, 'llama-3.1-8b-instant', 'llama-3.1-70b-versatile'];
+    const modelsToTry = [primaryModel, fallbackModel, 'llama-3.1-8b-instant', 'llama-3.3-70b-versatile'];
     
     for (const testModel of modelsToTry) {
       try {
@@ -999,61 +991,45 @@ Return ONLY this JSON:
   }
 });
 
-// Send an email using Gmail
+// Send an email using the unified EmailProvider (Gmail or Outlook)
 router.post('/send', upload.single('resumeFile'), async (req, res) => {
   try {
-    const tokens = req.session && req.session.tokens;
-    if (!tokens) return res.status(401).json({ error: 'Not authenticated' });
+    // Check if user is authenticated
+    if (!req.session) return res.status(401).json({ error: 'Not authenticated' });
+    const user = req.session.userProfile;
+    const provider = user?.provider || 'google';
+    
+    // Gmail requires tokens, Outlook requires user profile
+    if (provider === 'google' && !req.session.tokens) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+    if (provider === 'microsoft' && !user?.id) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
     
     const { to, subject = 'Hello', body = '' } = req.body || {};
     const resumeFile = req.file;
     
     if (!to) return res.status(400).json({ error: 'Missing recipient email (to)' });
 
-    const oauth2Client = createOAuthClientFromSession(tokens);
-    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+    // Use the unified EmailProvider
+    const emailProvider = new EmailProvider(req.session);
 
-    // Create email with attachment if resume is provided
-    if (resumeFile) {
-      // Create multipart email with attachment
-      const boundary = '----=_Part_' + Math.random().toString(36).substr(2, 9);
-      
-      let emailBody = '';
-      emailBody += `--${boundary}\r\n`;
-      emailBody += 'Content-Type: text/plain; charset="UTF-8"\r\n';
-      emailBody += 'Content-Transfer-Encoding: 7bit\r\n\r\n';
-      emailBody += body + '\r\n\r\n';
-      
-      // Add resume attachment
-      emailBody += `--${boundary}\r\n`;
-      emailBody += `Content-Type: ${resumeFile.mimetype}\r\n`;
-      emailBody += `Content-Disposition: attachment; filename="${resumeFile.originalname}"\r\n`;
-      emailBody += 'Content-Transfer-Encoding: base64\r\n\r\n';
-      emailBody += resumeFile.buffer.toString('base64') + '\r\n';
-      emailBody += `--${boundary}--\r\n`;
-
-      const headers = [
-        `To: ${to}`,
-        `Subject: ${subject}`,
-        `Content-Type: multipart/mixed; boundary="${boundary}"`,
-      ].join('\r\n');
-      
-      const raw = `${headers}\r\n\r\n${emailBody}`;
-      const encoded = Buffer.from(raw).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-      
-      await gmail.users.messages.send({ userId: 'me', requestBody: { raw: encoded } });
-    } else {
-      // Send simple text email without attachment
-      const headers = [
-        `To: ${to}`,
-        `Subject: ${subject}`,
-        'Content-Type: text/plain; charset="UTF-8"',
-      ].join('\r\n');
-      const raw = `${headers}\r\n\r\n${body}`;
-      const encoded = Buffer.from(raw).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-      
-      await gmail.users.messages.send({ userId: 'me', requestBody: { raw: encoded } });
+    // For now, EmailProvider doesn't support attachments via the unified interface
+    // If attachment is required and provider is Outlook, we'll need special handling
+    if (resumeFile && provider === 'microsoft') {
+      return res.status(400).json({ 
+        error: 'Attachments are not yet supported for Outlook accounts',
+        message: 'Please remove the attachment or use a Gmail account'
+      });
     }
+
+    // Send the email
+    await emailProvider.sendEmail({
+      to,
+      subject,
+      body: body || 'Hello',
+    });
     
     res.json({ sent: true });
   } catch (err) {

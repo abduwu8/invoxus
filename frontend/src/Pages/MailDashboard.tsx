@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Star, Reply as LucideReply, Trash2, Wand2, Send, X, Plus, Inbox, MessageSquare, Sparkles, CheckSquare, KeyRound, LogOut, Menu, ArrowLeft, ThumbsUp, ThumbsDown, Paperclip, Check, RefreshCw } from 'lucide-react'
+import { Star, Reply as LucideReply, Trash2, Wand2, Send, X, Plus, Inbox, MessageSquare, Sparkles, CheckSquare, KeyRound, LogOut, Menu, ArrowLeft, ThumbsUp, ThumbsDown, Paperclip, Check, RefreshCw, Loader2, AlertCircle, FileText, Search, Mail } from 'lucide-react'
 import { PlaceholdersAndVanishInput } from '../components/ui/reveal'
 import { LoaderOne } from '../components/loader'
 import PaymentComponent from '../components/PaymentComponent'
+import { NewFeatureModal } from '../components/mail/modals/NewFeatureModal'
 // Emoji picker removed for now
 // Note: Components like ChatModal, ComposeModal, etc. are defined inline below for now
 // TODO: Complete refactoring to extract all components to separate files
@@ -44,8 +45,9 @@ function buildApiUrl(path: string): URL {
   return new URL(path, base)
 }
 
+type UserProfile = { name?: string; email?: string; picture?: string; provider?: 'google' | 'microsoft' }
+
 export default function MailDashboard() {
-  type UserProfile = { name?: string; email?: string; picture?: string }
   const [emails, setEmails] = useState<EmailListItem[]>([])
   const [sentCount, setSentCount] = useState<number>(0)
   const [loading, setLoading] = useState(true)
@@ -56,6 +58,15 @@ export default function MailDashboard() {
   const [summaryExpanded, setSummaryExpanded] = useState(true)
   const [summarizing, setSummarizing] = useState(false)
   const [profile, setProfile] = useState<UserProfile | null>(null)
+  
+  // Helper function to get the correct API endpoint based on provider
+  const getApiPath = (path: string) => {
+    const provider = profile?.provider || 'google'
+    const apiPrefix = provider === 'microsoft' ? '/api/outlook' : '/api/gmail'
+    const fullPath = `${apiPrefix}${path}`
+    console.log('[DEBUG] getApiPath:', { provider, path, fullPath })
+    return fullPath
+  }
   const [threadMessages, setThreadMessages] = useState<Array<{
     id: string
     from: string
@@ -71,7 +82,7 @@ export default function MailDashboard() {
   const [showCategoryMenu, setShowCategoryMenu] = useState(false)
   // Sidebar chat opens a modal; keep only modal state
   // chatLoading managed inside ChatModal callbacks when needed
-  const [chatHistory, setChatHistory] = useState<Array<{ role: 'user' | 'assistant'; text: string }>>([])
+  const [chatHistory, setChatHistory] = useState<Array<{ role: 'user' | 'assistant'; text: string; emails?: any[] }>>([])
   const [chatModalOpen, setChatModalOpen] = useState(false)
   const [chatPendingSend, setChatPendingSend] = useState<null | { toEmail: string; subject: string; body: string }>(null)
   const [coldOpen, setColdOpen] = useState(false)
@@ -171,16 +182,19 @@ export default function MailDashboard() {
       setLoading(true);
       setError(null);
       
+      const provider = profile?.provider || 'google';
+      const isOutlook = provider === 'microsoft';
+      
       // Fetch emails based on current mode
-      let url = `${API_BASE}/api/gmail/messages`;
+      let url = `${API_BASE}${getApiPath('/messages')}`;
       if (showingOtps) {
-        url = `${API_BASE}/api/gmail/messages/otps?limit=300`;
+        url = `${API_BASE}${getApiPath('/messages/otps')}?limit=300`;
       } else if (unsubscribeMode) {
-        const apiUrl = buildApiUrl('/api/gmail/unsubscribe/suggestions');
+        const apiUrl = buildApiUrl(getApiPath('/unsubscribe/suggestions'));
         apiUrl.searchParams.set('limit', '200');
         url = apiUrl.toString();
       } else if (aiDeleteMode) {
-        const apiUrl = buildApiUrl('/api/gmail/messages/suggest-deletions');
+        const apiUrl = buildApiUrl(getApiPath('/messages/suggest-deletions'));
         apiUrl.searchParams.set('limit', '200');
         apiUrl.searchParams.set('strict', '1');
         apiUrl.searchParams.set('ai', '1');
@@ -189,9 +203,13 @@ export default function MailDashboard() {
       } else {
         // Regular inbox - check if we have search
         if (search.trim()) {
-          url = `${API_BASE}/api/gmail/messages?limit=100&q=${encodeURIComponent(search.trim())}`;
+          if (isOutlook) {
+            url = `${API_BASE}${getApiPath('/search')}?q=${encodeURIComponent(search.trim())}&maxResults=100`;
+          } else {
+            url = `${API_BASE}${getApiPath('/messages')}?limit=100&q=${encodeURIComponent(search.trim())}`;
+          }
         } else {
-          url = `${API_BASE}/api/gmail/messages?limit=100`;
+          url = `${API_BASE}${getApiPath('/messages')}?${isOutlook ? 'maxResults' : 'limit'}=100`;
         }
       }
 
@@ -218,7 +236,8 @@ export default function MailDashboard() {
       // Update sent count if not in special modes
       if (!showingOtps && !unsubscribeMode && !aiDeleteMode) {
         try {
-          const sentResp = await fetch(`${API_BASE}/api/gmail/messages?limit=100&folder=sent`, { credentials: 'include' });
+          const sentUrl = `${API_BASE}${getApiPath('/messages')}?${isOutlook ? 'maxResults' : 'limit'}=100${isOutlook ? '' : '&folder=sent'}`;
+          const sentResp = await fetch(sentUrl, { credentials: 'include' });
           if (sentResp.ok) {
             const sentJson = await sentResp.json();
             setSentCount(Array.isArray(sentJson.messages) ? sentJson.messages.length : 0);
@@ -273,16 +292,17 @@ export default function MailDashboard() {
   const [unsubscribeMode, setUnsubscribeMode] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const chatSuggestions = [
-    'Recent design feedback',
-    'Reply to Nick',
-    'Find invoice from Stripe',
-    'Schedule meeting with Sarah',
-    'What did Alex say about the demo?',
+    'Show me unread emails from this week',
+    'Find emails from John about the project',
+    'Summarize my important emails from today',
+    'What are my recent conversations?',
+    'Show me emails with attachments',
+    'Find emails about meetings or schedules',
   ]
 
   async function addToCategory(categoryId: string, messageId: string) {
     try {
-      const r = await fetch(`${API_BASE}/api/gmail/categories/${categoryId}/mails`, {
+      const r = await fetch(`${API_BASE}${getApiPath(`/categories/${categoryId}/mails`)}`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -302,7 +322,7 @@ export default function MailDashboard() {
 
   async function loadCategories() {
     try {
-      const r = await fetch(`${API_BASE}/api/gmail/categories`, { credentials: 'include' })
+      const r = await fetch(`${API_BASE}${getApiPath('/categories')}`, { credentials: 'include' })
       if (!r.ok) return
       const j = await r.json()
       setCategories(j.categories || [])
@@ -311,7 +331,7 @@ export default function MailDashboard() {
 
   async function loadCategoryMessageIds(catId: string) {
     try {
-      const r = await fetch(`${API_BASE}/api/gmail/categories/${catId}/mails`, { credentials: 'include' })
+      const r = await fetch(`${API_BASE}${getApiPath(`/categories/${catId}/mails`)}`, { credentials: 'include' })
       if (!r.ok) return
       const j = await r.json()
       setCategoryMessageIds(new Set<string>((j.messageIds as string[]) || []))
@@ -319,12 +339,28 @@ export default function MailDashboard() {
   }
 
   useEffect(() => {
+    // Wait for profile to be loaded before fetching emails
+    if (!profile) {
+      console.log('[DEBUG] Waiting for profile to load...')
+      return
+    }
+    
+    console.log('[DEBUG] Profile loaded, fetching emails. Provider:', profile.provider)
+    
     let cancelled = false
     async function load() {
       try {
-        const resp = await fetch(`${API_BASE}/api/gmail/messages`, { credentials: 'include' })
+        const provider = profile?.provider || 'google'
+        const isOutlook = provider === 'microsoft'
+        const url = `${API_BASE}${getApiPath('/messages')}?${isOutlook ? 'maxResults' : 'limit'}=100`
+        
+        console.log('[DEBUG] Fetching emails from:', url)
+        const resp = await fetch(url, { credentials: 'include' })
+        console.log('[DEBUG] Response status:', resp.status)
+        
         if (!resp.ok) throw new Error(`Failed: ${resp.status}`)
         const json = await resp.json()
+        console.log('[DEBUG] Received emails:', json.messages?.length || 0, 'messages')
         if (!cancelled) setEmails(json.messages || [])
       } catch (e: any) {
         if (!cancelled) setError(e?.message || 'Failed to load emails')
@@ -335,7 +371,11 @@ export default function MailDashboard() {
     load()
     ;(async () => {
       try {
-        const r = await fetch(`${API_BASE}/api/gmail/messages?limit=100&folder=sent`, { credentials: 'include' })
+        const provider = profile?.provider || 'google'
+        const isOutlook = provider === 'microsoft'
+        const sentUrl = `${API_BASE}${getApiPath('/messages')}?${isOutlook ? 'maxResults' : 'limit'}=100${isOutlook ? '' : '&folder=sent'}`
+        
+        const r = await fetch(sentUrl, { credentials: 'include' })
         if (!r.ok) return
         const j = await r.json()
         if (!cancelled) setSentCount(Array.isArray(j.messages) ? j.messages.length : 0)
@@ -344,7 +384,7 @@ export default function MailDashboard() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [profile])
 
   // Load categories for Add-to-category menu
   useEffect(() => {
@@ -365,8 +405,11 @@ export default function MailDashboard() {
         const r = await fetch(`${API_BASE}/api/auth/me`, { credentials: 'include' })
         if (!r.ok) return
         const j = await r.json()
+        console.log('[DEBUG] Profile loaded:', j.profile)
         if (!cancelled) setProfile(j.profile || null)
-      } catch {}
+      } catch (error) {
+        console.error('[DEBUG] Profile fetch error:', error)
+      }
     })()
     return () => {
       cancelled = true
@@ -374,25 +417,35 @@ export default function MailDashboard() {
   }, [])
 
   useEffect(() => {
-    if (!selectedId) return
+    if (!selectedId || !profile) return
     let cancelled = false
     setDetail(null)
     setSummarizing(false)
     setDetailLoading(true)
+    setThreadMessages([]) // Clear thread messages when loading new email
     ;(async () => {
       try {
-        const resp = await fetch(`${API_BASE}/api/gmail/messages/${selectedId}`, { credentials: 'include' })
+        const url = `${API_BASE}${getApiPath(`/messages/${selectedId}`)}`
+        console.log('[DEBUG] Fetching email detail from:', url)
+        const resp = await fetch(url, { credentials: 'include' })
+        console.log('[DEBUG] Email detail response status:', resp.status)
         if (!resp.ok) throw new Error(`Failed: ${resp.status}`)
         const json = (await resp.json()) as EmailDetail
+        console.log('[DEBUG] Email detail received:', { subject: json.subject, hasBody: !!json.bodyHtml || !!json.bodyText })
         if (!cancelled) setDetail(json)
-        // Fetch thread messages for the conversation view
-        try {
-          const t = await fetch(`${API_BASE}/api/gmail/messages/${selectedId}/thread`, { credentials: 'include' })
-          if (t.ok) {
-            const tj = await t.json()
-            if (!cancelled && Array.isArray(tj.messages)) setThreadMessages(tj.messages)
-          }
-        } catch {}
+        // Fetch thread messages for the conversation view (Gmail only for now)
+        if (profile.provider !== 'microsoft') {
+          try {
+            const t = await fetch(`${API_BASE}${getApiPath(`/messages/${selectedId}/thread`)}`, { credentials: 'include' })
+            if (t.ok) {
+              const tj = await t.json()
+              if (!cancelled && Array.isArray(tj.messages)) setThreadMessages(tj.messages)
+            }
+          } catch {}
+        } else {
+          // For Outlook, thread messages array stays empty, so main body will be shown
+          if (!cancelled) setThreadMessages([])
+        }
       } catch (e: any) {
         if (!cancelled) setError(e?.message || 'Failed to load message')
       } finally {
@@ -457,7 +510,7 @@ export default function MailDashboard() {
       setShowingOtps(false)
       try {
         setLoading(true)
-        const resp = await fetch(`${API_BASE}/api/gmail/messages?limit=100`, { credentials: 'include' })
+        const resp = await fetch(`${API_BASE}${getApiPath('/messages')}?limit=100`, { credentials: 'include' })
         const json = await resp.json()
         setEmails(json.messages || [])
       } catch (e) {
@@ -475,7 +528,7 @@ export default function MailDashboard() {
       setShowingOtps(false)
       try {
         setLoading(true)
-        const resp = await fetch(`${API_BASE}/api/gmail/messages?limit=100&folder=sent`, { credentials: 'include' })
+        const resp = await fetch(`${API_BASE}${getApiPath('/messages')}?limit=100&folder=sent`, { credentials: 'include' })
         const json = await resp.json()
         setEmails(json.messages || [])
         setSentCount(Array.isArray(json.messages) ? json.messages.length : 0)
@@ -497,7 +550,7 @@ export default function MailDashboard() {
       setShowingSuggestions(false)
       setShowingOtps(true)
       setLoading(true)
-      const r = await fetch(`${API_BASE}/api/gmail/messages/otps?limit=300`, { credentials: 'include' })
+      const r = await fetch(`${API_BASE}${getApiPath('/messages/otps')}?limit=300`, { credentials: 'include' })
       if (r.ok) {
         const j = await r.json()
         setEmails(j.messages || [])
@@ -518,7 +571,7 @@ export default function MailDashboard() {
       setShowingSuggestions(true)
       setShowingOtps(false)
       setLoading(true)
-      const url = buildApiUrl('/api/gmail/messages/suggest-deletions')
+      const url = buildApiUrl(getApiPath('/messages/suggest-deletions'))
       url.searchParams.set('limit', '200')
       url.searchParams.set('strict', '1')
       url.searchParams.set('ai', '1')
@@ -543,7 +596,7 @@ export default function MailDashboard() {
       setShowingSuggestions(false)
       setUnsubscribeMode(true)
       setLoading(true)
-      const url = buildApiUrl('/api/gmail/unsubscribe/suggestions')
+      const url = buildApiUrl(getApiPath('/unsubscribe/suggestions'))
       url.searchParams.set('limit', '200')
       const r = await fetch(url.toString(), { credentials: 'include' })
       if (r.ok) {
@@ -600,7 +653,7 @@ export default function MailDashboard() {
             onShowUnsubscribe={() => handleShowUnsubscribe(() => setSidebarOpen(false))}
                 categories={categories}
                 onAddCategory={async (name) => {
-                  const r = await fetch(`${API_BASE}/api/gmail/categories`, {
+                  const r = await fetch(`${API_BASE}${getApiPath('/categories')}`, {
                     method: 'POST',
                     credentials: 'include',
                     headers: { 'Content-Type': 'application/json' },
@@ -609,7 +662,7 @@ export default function MailDashboard() {
                   if (r.ok) await loadCategories()
                 }}
                 onRemoveCategory={async (id) => {
-                  const r = await fetch(`${API_BASE}/api/gmail/categories/${id}`, {
+                  const r = await fetch(`${API_BASE}${getApiPath(`/categories/${id}`)}`, {
                     method: 'DELETE',
                     credentials: 'include',
                   })
@@ -641,7 +694,7 @@ export default function MailDashboard() {
             onShowUnsubscribe={() => handleShowUnsubscribe()}
             categories={categories}
             onAddCategory={async (name) => {
-              const r = await fetch(`${API_BASE}/api/gmail/categories`, {
+              const r = await fetch(`${API_BASE}${getApiPath('/categories')}`, {
                 method: 'POST',
                 credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
@@ -650,7 +703,7 @@ export default function MailDashboard() {
               if (r.ok) await loadCategories()
             }}
             onRemoveCategory={async (id) => {
-              const r = await fetch(`${API_BASE}/api/gmail/categories/${id}`, {
+              const r = await fetch(`${API_BASE}${getApiPath(`/categories/${id}`)}`, {
                 method: 'DELETE',
                 credentials: 'include',
               })
@@ -689,7 +742,7 @@ export default function MailDashboard() {
                   if (!q) return
                   try {
                     setLoading(true)
-                    const r = await fetch(`${API_BASE}/api/gmail/messages?limit=100&q=${encodeURIComponent(q)}`, { credentials: 'include' })
+                    const r = await fetch(`${API_BASE}${getApiPath('/messages')}?limit=100&q=${encodeURIComponent(q)}`, { credentials: 'include' })
                     if (!r.ok) throw new Error('Search failed')
                     const j = await r.json()
                     setEmails(j.messages || [])
@@ -723,7 +776,7 @@ export default function MailDashboard() {
                   ;(async () => {
                     try {
                       setLoading(true)
-                      const resp = await fetch(`${API_BASE}/api/gmail/messages?limit=100`, { credentials: 'include' })
+                      const resp = await fetch(`${API_BASE}${getApiPath('/messages')}?limit=100`, { credentials: 'include' })
                       const json = await resp.json()
                       setEmails(json.messages || [])
                       setShowingSuggestions(false)
@@ -748,7 +801,7 @@ export default function MailDashboard() {
                   onClick={async () => {
                     try {
                       setLoading(true)
-                      const url = buildApiUrl('/api/gmail/messages/suggest-deletions')
+                      const url = buildApiUrl(getApiPath('/messages/suggest-deletions'))
                       url.searchParams.set('limit', '200')
                       url.searchParams.set('strict', '1')
                       url.searchParams.set('ai', '1')
@@ -787,7 +840,7 @@ export default function MailDashboard() {
                     if (!ok) return
                     try {
                       const ids = Array.from(selectedForDelete)
-                      const r = await fetch(`${API_BASE}/api/gmail/messages/bulk-delete`, {
+                      const r = await fetch(`${API_BASE}${getApiPath('/messages/bulk-delete')}`, {
                         method: 'POST',
                         credentials: 'include',
                         headers: { 'Content-Type': 'application/json' },
@@ -832,7 +885,7 @@ export default function MailDashboard() {
                   onClick={async () => {
                     try {
                       setLoading(true)
-                      const r = await fetch(`${API_BASE}/api/gmail/messages/otps?limit=300`, { credentials: 'include' })
+                      const r = await fetch(`${API_BASE}${getApiPath('/messages/otps')}?limit=300`, { credentials: 'include' })
                       if (!r.ok) throw new Error('Failed')
                       const j = await r.json()
                       setEmails(j.messages || [])
@@ -865,7 +918,7 @@ export default function MailDashboard() {
                     if (!ok) return
                     try {
                       const ids = Array.from(selectedForDelete)
-                      const r = await fetch(`${API_BASE}/api/gmail/messages/bulk-delete`, {
+                      const r = await fetch(`${API_BASE}${getApiPath('/messages/bulk-delete')}`, {
                         method: 'POST',
                         credentials: 'include',
                         headers: { 'Content-Type': 'application/json' },
@@ -909,7 +962,7 @@ export default function MailDashboard() {
                   onClick={async () => {
                     try {
                       setLoading(true)
-                      const url = buildApiUrl('/api/gmail/unsubscribe/suggestions')
+                      const url = buildApiUrl(getApiPath('/unsubscribe/suggestions'))
                       url.searchParams.set('limit', '200')
                       const r = await fetch(url.toString(), { credentials: 'include' })
                       if (!r.ok) throw new Error('Failed')
@@ -952,7 +1005,7 @@ export default function MailDashboard() {
                     if (!ok) return
                     try {
                       const ids = Array.from(selectedForDelete)
-                      const r = await fetch(`${API_BASE}/api/gmail/unsubscribe/execute`, {
+                      const r = await fetch(`${API_BASE}${getApiPath('/unsubscribe/execute')}`, {
                         method: 'POST',
                         credentials: 'include',
                         headers: { 'Content-Type': 'application/json' },
@@ -1147,7 +1200,7 @@ export default function MailDashboard() {
                         const next = !detail.isStarred
                         setDetail((d) => (d ? { ...d, isStarred: next } : d))
                         setEmails((list) => list.map((it) => (it.id === detail.id ? { ...it, isStarred: next } : it)))
-                        const resp = await fetch(`${API_BASE}/api/gmail/messages/${detail.id}/star`, {
+                        const resp = await fetch(`${API_BASE}${getApiPath(`/messages/${detail.id}/star`)}`, {
                           method: 'POST',
                           credentials: 'include',
                           headers: { 'Content-Type': 'application/json' },
@@ -1183,7 +1236,8 @@ export default function MailDashboard() {
                       variant="danger"
                       onClick={async () => {
                         if (!confirm('Delete this email (move to trash)?')) return
-                        const r = await fetch(`${API_BASE}/api/gmail/messages/${detail.id}`, {
+                        const url = `${API_BASE}${getApiPath(`/messages/${detail.id}`)}`
+                        const r = await fetch(url, {
                           method: 'DELETE',
                           credentials: 'include',
                         })
@@ -1253,7 +1307,8 @@ export default function MailDashboard() {
                 onAction={async () => {
                   try {
                     setSummarizing(true)
-                    const sum = await fetch(`${API_BASE}/api/gmail/messages/${detail.id}/summarize`, {
+                    const url = `${API_BASE}${getApiPath(`/messages/${detail.id}/summarize`)}`
+                    const sum = await fetch(url, {
                       method: 'POST',
                       credentials: 'include',
                     })
@@ -1271,6 +1326,23 @@ export default function MailDashboard() {
 
               {/* Thread (conversation) */}
           <div className="px-4 pb-8 space-y-8 overflow-x-hidden max-w-full">
+                {/* If no thread messages (e.g., Outlook), show the main email body */}
+                {threadMessages.length === 0 && detail ? (
+                  <div className="group">
+                    <div className="mb-2 text-xs text-neutral-500">
+                      {detail.from} • {new Date(detail.date).toLocaleString()}
+                    </div>
+                    {detail.bodyHtml ? (
+                      <EmailHtmlFrame html={sanitizeHtmlForDark(detail.bodyHtml)} />
+                    ) : detail.bodyText ? (
+                      <pre className="whitespace-pre-wrap text-sm text-neutral-200">{detail.bodyText}</pre>
+                    ) : (
+                      <div className="text-sm text-neutral-500">No content</div>
+                    )}
+                  </div>
+                ) : null}
+                
+                {/* Thread messages (Gmail threads or multiple messages) */}
                 {threadMessages.map((m, idx) => (
                   <div key={m.id} className="group">
                     <div className="mb-2 text-xs text-neutral-500">
@@ -1292,7 +1364,7 @@ export default function MailDashboard() {
                           className="rounded-md border border-neutral-800 px-2 py-1 text-xs hover:bg-neutral-900"
                           onClick={async () => {
                             try {
-                              await fetch(`${API_BASE}/api/gmail/categories/${selectedCategory}/mails`, {
+                              await fetch(`${API_BASE}${getApiPath(`/categories/${selectedCategory}/mails`)}`, {
                                 method: 'POST',
                                 credentials: 'include',
                                 headers: { 'Content-Type': 'application/json' },
@@ -1315,7 +1387,8 @@ export default function MailDashboard() {
                 <ReplyBox
                   onSuggest={async () => {
                     try {
-                      const r = await fetch(`${API_BASE}/api/gmail/messages/${detail.id}/suggest-reply`, {
+                      const url = `${API_BASE}${getApiPath(`/messages/${detail.id}/suggest-reply`)}`
+                      const r = await fetch(url, {
                         method: 'POST',
                         credentials: 'include',
                       })
@@ -1343,7 +1416,8 @@ export default function MailDashboard() {
                     }
                   }}
                   onSend={async (text) => {
-                    const r = await fetch(`${API_BASE}/api/gmail/messages/${detail.id}/reply`, {
+                    const url = `${API_BASE}${getApiPath(`/messages/${detail.id}/reply`)}`
+                    const r = await fetch(url, {
                       method: 'POST',
                       credentials: 'include',
                       headers: { 'Content-Type': 'application/json' },
@@ -1352,16 +1426,22 @@ export default function MailDashboard() {
                     if (!r.ok) {
                       import('sonner').then(({ toast }) => toast.error('Failed to send reply'))
                     } else {
-                      // Refresh thread so the new reply appears under the original
-                      try {
-                        const t = await fetch(`${API_BASE}/api/gmail/messages/${detail.id}/thread`, {
-                          credentials: 'include',
-                        })
-                        if (t.ok) {
-                          const tj = await t.json()
-                          if (Array.isArray(tj.messages)) setThreadMessages(tj.messages)
-                        }
-                      } catch {}
+                      // Refresh thread so the new reply appears under the original (Gmail only)
+                      if (profile?.provider !== 'microsoft') {
+                        try {
+                          const threadUrl = `${API_BASE}${getApiPath(`/messages/${detail.id}/thread`)}`
+                          const t = await fetch(threadUrl, {
+                            credentials: 'include',
+                          })
+                          if (t.ok) {
+                            const tj = await t.json()
+                            if (Array.isArray(tj.messages)) setThreadMessages(tj.messages)
+                          }
+                        } catch {}
+                      } else {
+                        // For Outlook, just show success
+                        import('sonner').then(({ toast }) => toast.success('Reply sent'))
+                      }
                     }
                   }}
                 />
@@ -1373,9 +1453,11 @@ export default function MailDashboard() {
       {/* Global modals to ensure they open on mobile */}
       {composeOpen ? (
         <ComposeModal
+          profile={profile}
           onClose={() => setComposeOpen(false)}
           onSend={async (payload) => {
-            const r = await fetch(`${API_BASE}/api/gmail/messages/send`, {
+            const url = `${API_BASE}${getApiPath('/messages/send')}`
+            const r = await fetch(url, {
               method: 'POST',
               credentials: 'include',
               headers: { 'Content-Type': 'application/json' },
@@ -1430,8 +1512,13 @@ export default function MailDashboard() {
           history={chatHistory}
           pendingSend={chatPendingSend}
           onCancelPendingSend={() => setChatPendingSend(null)}
+          onEmailClick={(emailId: string) => {
+            // Close chat and open the email in dashboard
+            setChatModalOpen(false)
+            setSelectedId(emailId)
+          }}
           onConfirmSend={async ({ to, subject, body }) => {
-            const sr = await fetch(`${API_BASE}/api/gmail/messages/send`, {
+            const sr = await fetch(`${API_BASE}${getApiPath('/messages/send')}`, {
               method: 'POST',
               credentials: 'include',
               headers: { 'Content-Type': 'application/json' },
@@ -1441,7 +1528,7 @@ export default function MailDashboard() {
               setChatHistory((h) => [...h, { role: 'assistant', text: `Email sent to ${to}` }])
               setChatPendingSend(null)
               try {
-                const resp = await fetch(`${API_BASE}/api/gmail/messages?limit=100`, { credentials: 'include' })
+                const resp = await fetch(`${API_BASE}${getApiPath('/messages')}?limit=100`, { credentials: 'include' })
                 if (resp.ok) {
                   const json = await resp.json()
                   setEmails(json.messages || [])
@@ -1452,14 +1539,14 @@ export default function MailDashboard() {
             setChatHistory((h) => [...h, { role: 'assistant', text: 'Failed to send email.' }])
             return false
           }}
-          onAsk={async (q) => {
+          onAsk={async (q, limit = 50) => {
             setChatHistory((h) => [...h, { role: 'user', text: q }])
             try {
               const r = await fetch(`${API_BASE}/api/chat/ask`, {
                 method: 'POST',
                 credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ question: q }),
+                body: JSON.stringify({ question: q, limit }),
               })
               const contentType = r.headers.get('content-type') || ''
               if (!r.ok) {
@@ -1468,7 +1555,15 @@ export default function MailDashboard() {
               } else if (contentType.includes('application/json')) {
                 const j = await r.json()
                 const a = j?.answer || 'No answer'
-                setChatHistory((h) => [...h, { role: 'assistant', text: a }])
+                const emailsScanned = j?.messages?.length || 0
+                let responseText = a
+                if (emailsScanned > 0) {
+                  responseText += `\n\n_Scanned ${emailsScanned} of up to ${limit} email${limit !== 1 ? 's' : ''}_`
+                }
+                // Only store emails if the intent is to show/search emails (not compose/send)
+                const shouldShowEmails = j?.action !== 'send' && j?.action !== 'schedule' && j?.action !== 'compose'
+                const foundEmails = shouldShowEmails ? (j?.messages || []) : []
+                setChatHistory((h) => [...h, { role: 'assistant', text: responseText, emails: foundEmails }])
 
                   if (j?.action === 'send') {
                     // Always surface preview form on first pass; try to smart-fill "to" from assistant payload or recent participants
@@ -1631,63 +1726,6 @@ function ProfileHeader({ profile }: { profile: { name?: string; email?: string; 
           </button>
         </div>
       ) : null}
-    </div>
-  )
-}
-
-function NewFeatureModal({ onClose, onTryCold }: { onClose: () => void; onTryCold: () => void }) {
-  return (
-    <div className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-black border border-gray-800 rounded-lg shadow-2xl">
-        <div className="px-6 py-4 border-b border-gray-800">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-lg font-semibold text-white">What's New</div>
-              <div className="text-sm text-gray-400">Enhanced Cold Email Features</div>
-            </div>
-            <button 
-              onClick={onClose} 
-              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-800 text-gray-400 hover:text-white"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-        <div className="px-6 py-6">
-          <div className="space-y-4 text-gray-300">
-            <div>
-              <div className="text-sm font-medium text-white mb-1">Enhanced TLDR Mode</div>
-              <div className="text-xs text-gray-400">Creative, memorable emails with unique tech metaphors and personality throughout both paragraphs - no more boring intros</div>
-            </div>
-            <div>
-              <div className="text-sm font-medium text-white mb-1">Optimized Email Structure</div>
-              <div className="text-xs text-gray-400">Streamlined to 2 focused paragraphs with strategic bullet points for maximum impact and readability</div>
-            </div>
-            <div>
-              <div className="text-sm font-medium text-white mb-1">Enhanced AI Intelligence</div>
-              <div className="text-xs text-gray-400">Smarter content generation with improved tone matching and completely unique content every time</div>
-            </div>
-            <div>
-              <div className="text-sm font-medium text-white mb-1">Resume Attachment Support</div>
-              <div className="text-xs text-gray-400">Upload and attach your resume (PDF, DOC, DOCX) directly to cold emails for complete professional presentation</div>
-            </div>
-          </div>
-          <div className="mt-8 flex gap-3">
-            <button 
-              onClick={onClose} 
-              className="flex-1 px-4 py-2 text-sm font-medium text-gray-400 bg-gray-900 border border-gray-700 rounded-lg hover:bg-gray-800 hover:text-white transition-colors"
-            >
-              Later
-            </button>
-            <button 
-              onClick={onTryCold} 
-              className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Try Now
-            </button>
-          </div>
-        </div>
-      </div>
     </div>
   )
 }
@@ -1894,17 +1932,20 @@ function ChatModal({
   onCancelPendingSend,
   onConfirmSend,
   onAsk,
+  onEmailClick,
 }: {
   onClose: () => void
   suggestions: string[]
-  history: Array<{ role: 'user' | 'assistant'; text: string }>
+  history: Array<{ role: 'user' | 'assistant'; text: string; emails?: any[] }>
   pendingSend: null | { toEmail: string; subject: string; body: string }
   onCancelPendingSend: () => void
   onConfirmSend: (p: { to: string; subject: string; body: string }) => Promise<boolean>
-  onAsk: (q: string) => Promise<void>
+  onAsk: (q: string, limit?: number) => Promise<void>
+  onEmailClick?: (emailId: string) => void
 }) {
   const [value, setValue] = useState('')
   const [sending, setSending] = useState(false)
+  const [scanLimit, setScanLimit] = useState<25 | 50 | 100>(50)
   const [showFeedback, setShowFeedback] = useState<null | number>(null)
   const showExamples = history.length === 0 && value.trim().length === 0
   const messagesRef = useRef<HTMLDivElement | null>(null)
@@ -1925,60 +1966,191 @@ function ChatModal({
   return (
     <div className="fixed inset-0 md:inset-auto md:right-6 md:bottom-6 z-50 flex md:block">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm md:hidden" onClick={onClose} />
-      <div className="relative w-full h-full md:h-[85vh] md:max-h-[90vh] md:w-[520px] md:max-w-[92vw] rounded-none md:rounded-3xl border border-white/10 bg-black shadow-2xl overflow-hidden flex flex-col ml-auto">
-        <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b border-white/10 bg-black">
-          <div>
+      <div className="relative w-full h-full md:h-[85vh] md:max-h-[90vh] md:w-[520px] md:max-w-[92vw] rounded-none md:rounded-3xl border border-white/10 bg-black shadow-2xl flex flex-col ml-auto">
+        {/* Header - Fixed */}
+        <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-white/10 bg-black">
+          <div className="flex-1">
             <div className="text-base font-semibold text-white">Assistant</div>
             <div className="text-xs text-gray-400">AI-powered email help</div>
           </div>
-          <button className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors" onClick={onClose}>
-            <X className="w-4 h-4 text-white" />
-          </button>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-400">Scan:</span>
+              <select
+                value={scanLimit}
+                onChange={(e) => setScanLimit(Number(e.target.value) as 25 | 50 | 100)}
+                className="text-xs bg-white/5 border border-white/20 rounded-lg px-2 py-1 text-white outline-none hover:bg-white/10 focus:ring-1 focus:ring-white/30 cursor-pointer [&>option]:bg-gray-900 [&>option]:text-white"
+              >
+                <option value="25" className="bg-gray-900 text-white">25 emails</option>
+                <option value="50" className="bg-gray-900 text-white">50 emails</option>
+                <option value="100" className="bg-gray-900 text-white">100 emails</option>
+              </select>
+            </div>
+            <button className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors" onClick={onClose}>
+              <X className="w-4 h-4 text-white" />
+            </button>
+          </div>
         </div>
-        <div className="flex flex-col h-full">
-          <div className="px-6 py-4 flex flex-col gap-4 flex-1 overflow-hidden">
+        
+        {/* Messages Area - Scrollable */}
+        <div className="flex-1 overflow-y-auto px-6 py-4">
+          <div className="flex flex-col gap-4 min-h-full">
             {showExamples ? (
               <>
                 <div className="text-center py-8">
-                  <div className="text-lg font-medium text-white mb-2">How can I help you today?</div>
-                  <div className="text-sm text-gray-400">Ask me anything about your emails</div>
+                  <div className="text-lg font-medium text-white mb-2">AI Email Assistant</div>
+                  <div className="text-sm text-gray-400">Smart email management powered by AI</div>
                 </div>
-                <div className="grid grid-cols-1 gap-2">
-                  {suggestions.map((s, i) => (
-                    <button
-                      key={i}
-                      className="text-left px-4 py-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-white text-sm transition-colors"
-                      onClick={() => setValue(s)}
-                    >
-                      {s}
-                    </button>
-                  ))}
+                
+                {/* Quick Action Buttons */}
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  <button
+                    className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border border-white/20 bg-white/5 hover:bg-white/10 text-white text-sm transition-colors group disabled:opacity-50"
+                    disabled={sending}
+                    onClick={async () => {
+                      const q = "Show me important unread emails";
+                      setValue('');
+                      setSending(true);
+                      await onAsk(q, scanLimit);
+                      setSending(false);
+                    }}
+                  >
+                    <AlertCircle className="w-4 h-4 text-white/80 group-hover:text-white" />
+                    <span>Important</span>
+                  </button>
+                  <button
+                    className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border border-white/20 bg-white/5 hover:bg-white/10 text-white text-sm transition-colors group disabled:opacity-50"
+                    disabled={sending}
+                    onClick={async () => {
+                      const q = "Summarize my important emails from today";
+                      setValue('');
+                      setSending(true);
+                      await onAsk(q, scanLimit);
+                      setSending(false);
+                    }}
+                  >
+                    <FileText className="w-4 h-4 text-white/80 group-hover:text-white" />
+                    <span>Summarize</span>
+                  </button>
+                  <button
+                    className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border border-white/20 bg-white/5 hover:bg-white/10 text-white text-sm transition-colors group disabled:opacity-50"
+                    disabled={sending}
+                    onClick={async () => {
+                      const q = "Show me recent emails with attachments";
+                      setValue('');
+                      setSending(true);
+                      await onAsk(q, scanLimit);
+                      setSending(false);
+                    }}
+                  >
+                    <Search className="w-4 h-4 text-white/80 group-hover:text-white" />
+                    <span>Attachments</span>
+                  </button>
+                  <button
+                    className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border border-white/20 bg-white/5 hover:bg-white/10 text-white text-sm transition-colors group disabled:opacity-50"
+                    disabled={sending}
+                    onClick={async () => {
+                      const q = "What emails need my response?";
+                      setValue('');
+                      setSending(true);
+                      await onAsk(q, scanLimit);
+                      setSending(false);
+                    }}
+                  >
+                    <Mail className="w-4 h-4 text-white/80 group-hover:text-white" />
+                    <span>Action Needed</span>
+                  </button>
+                </div>
+                
+                <div className="border-t border-white/10 pt-4 mt-2">
+                  <div className="text-xs text-gray-500 mb-2 font-medium">Try asking:</div>
+                  <div className="grid grid-cols-1 gap-2">
+                    {suggestions.map((s, i) => (
+                      <button
+                        key={i}
+                        className="text-left px-4 py-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-white text-sm transition-colors disabled:opacity-50"
+                        disabled={sending}
+                        onClick={async () => {
+                          setValue('');
+                          setSending(true);
+                          await onAsk(s, scanLimit);
+                          setSending(false);
+                        }}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </>
             ) : null}
 
             {/* Messages */}
-            <div ref={messagesRef} className="space-y-4 flex-1 overflow-y-auto pr-2 no-scrollbar">
+            <div ref={messagesRef} className="space-y-4">
               {history.slice(-12).map((m, idx) => (
-                <div key={idx} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div
-                    className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm ${
-                      m.role === 'user'
-                        ? 'bg-white text-black'
-                        : 'bg-white/10 text-white border border-white/20'
-                    }`}
-                  >
-                    {m.text}
+                <div key={idx} className="space-y-2">
+                  <div className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div
+                      className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm whitespace-pre-wrap ${
+                        m.role === 'user'
+                          ? 'bg-white text-black'
+                          : 'bg-white/10 text-white border border-white/20'
+                      }`}
+                    >
+                      {m.text}
+                    </div>
                   </div>
+                  
+                  {/* Render clickable email cards if emails are present */}
+                  {m.role === 'assistant' && m.emails && m.emails.length > 0 && (
+                    <div className="flex justify-start">
+                      <div className="max-w-[85%] space-y-2">
+                        {m.emails.slice(0, 5).map((email: any, emailIdx: number) => (
+                          <button
+                            key={emailIdx}
+                            onClick={() => onEmailClick?.(email.id)}
+                            className="w-full text-left px-4 py-3 rounded-xl border border-white/20 bg-white/5 hover:bg-white/10 transition-colors group"
+                          >
+                            <div className="flex items-start gap-3">
+                              <Mail className="w-4 h-4 text-white/60 group-hover:text-white/80 mt-0.5 flex-shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <div className="text-sm font-medium text-white truncate">
+                                  {email.subject || '(No Subject)'}
+                                </div>
+                                <div className="text-xs text-white/60 truncate mt-0.5">
+                                  {email.from || 'Unknown sender'}
+                                </div>
+                                {email.snippet && (
+                                  <div className="text-xs text-white/40 line-clamp-1 mt-1">
+                                    {email.snippet}
+                                  </div>
+                                )}
+                                {email.date && (
+                                  <div className="text-xs text-white/40 mt-1">
+                                    {new Date(email.date).toLocaleDateString()}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="text-xs text-white/40 group-hover:text-white/60">→</div>
+                            </div>
+                          </button>
+                        ))}
+                        {m.emails.length > 5 && (
+                          <div className="text-xs text-white/40 text-center py-1">
+                            + {m.emails.length - 5} more emails
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
               {sending ? (
                 <div className="flex justify-start">
-                  <div className="max-w-[80%] rounded-2xl px-4 py-3 text-sm bg-white/5 text-gray-400 border border-white/10">
+                  <div className="rounded-2xl px-4 py-3 text-sm bg-white/5 border border-white/10">
                     <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-white/40 rounded-full animate-pulse"></div>
-                      <div className="w-2 h-2 bg-white/40 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
-                      <div className="w-2 h-2 bg-white/40 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
+                      <Loader2 className="w-4 h-4 text-white animate-spin" />
+                      <span className="text-white/80">Scanning {scanLimit} emails...</span>
                     </div>
                   </div>
                 </div>
@@ -1998,7 +2170,7 @@ function ChatModal({
 
             {/* Feedback (minimal) */}
             {showFeedback ? (
-              <div className="flex items-center justify-end gap-1 pb-2">
+              <div className="flex items-center justify-end gap-1 pb-2 mt-2">
                 <button
                   className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/20 hover:bg-white/10 transition-colors"
                   title="Good answer"
@@ -2023,18 +2195,86 @@ function ChatModal({
                 </button>
               </div>
             ) : null}
-          </div>
 
-          {/* Input - Fixed at bottom */}
-          <div className="px-6 py-4 border-t border-white/10 bg-black">
+            {/* Quick Actions - Always visible after first message */}
+            {history.length > 0 && !showExamples ? (
+              <div className="mt-3 pt-3 border-t border-white/10">
+                <div className="text-xs text-gray-500 mb-1.5 font-medium">Quick Actions</div>
+                <div className="grid grid-cols-4 gap-2">
+                  <button
+                    className="flex flex-col items-center justify-center gap-1 px-2 py-2 rounded-lg border border-white/20 bg-white/5 hover:bg-white/10 text-white text-xs transition-colors group disabled:opacity-50"
+                    disabled={sending}
+                    onClick={async () => {
+                      const q = "Show me important unread emails";
+                      setValue('');
+                      setSending(true);
+                      await onAsk(q, scanLimit);
+                      setSending(false);
+                    }}
+                  >
+                    <AlertCircle className="w-4 h-4 text-white/80 group-hover:text-white" />
+                    <span>Important</span>
+                  </button>
+                  <button
+                    className="flex flex-col items-center justify-center gap-1 px-2 py-2 rounded-lg border border-white/20 bg-white/5 hover:bg-white/10 text-white text-xs transition-colors group disabled:opacity-50"
+                    disabled={sending}
+                    onClick={async () => {
+                      const q = "Summarize my important emails from today";
+                      setValue('');
+                      setSending(true);
+                      await onAsk(q, scanLimit);
+                      setSending(false);
+                    }}
+                  >
+                    <FileText className="w-4 h-4 text-white/80 group-hover:text-white" />
+                    <span>Summarize</span>
+                  </button>
+                  <button
+                    className="flex flex-col items-center justify-center gap-1 px-2 py-2 rounded-lg border border-white/20 bg-white/5 hover:bg-white/10 text-white text-xs transition-colors group disabled:opacity-50"
+                    disabled={sending}
+                    onClick={async () => {
+                      const q = "Show me recent emails with attachments";
+                      setValue('');
+                      setSending(true);
+                      await onAsk(q, scanLimit);
+                      setSending(false);
+                    }}
+                  >
+                    <Search className="w-4 h-4 text-white/80 group-hover:text-white" />
+                    <span>Attachments</span>
+                  </button>
+                  <button
+                    className="flex flex-col items-center justify-center gap-1 px-2 py-2 rounded-lg border border-white/20 bg-white/5 hover:bg-white/10 text-white text-xs transition-colors group disabled:opacity-50"
+                    disabled={sending}
+                    onClick={async () => {
+                      const q = "What emails need my response?";
+                      setValue('');
+                      setSending(true);
+                      await onAsk(q, scanLimit);
+                      setSending(false);
+                    }}
+                  >
+                    <Mail className="w-4 h-4 text-white/80 group-hover:text-white" />
+                    <span>Action Needed</span>
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </div>
+
+        {/* Input - Fixed at bottom */}
+        <div className="flex-shrink-0 px-6 py-4 border-t border-white/10 bg-black">
             <div className="flex items-center gap-3">
               <div className="flex-1 rounded-2xl border border-white/20 bg-white/5 p-3">
                 <PlaceholdersAndVanishInput
                   placeholders={[
-                    'Find emails from Alice about invoices',
-                    'Summarize last week from John',
-                    'Email Nick a thank you note',
-                    'Schedule a follow up for tomorrow 9am',
+                    'Find emails from Sarah about the meeting...',
+                    'Summarize my emails from this week...',
+                    'Show me important unread messages...',
+                    'What did Alex say about the project?',
+                    'Find emails with documents or attachments...',
+                    'Help me write a reply to the latest email...',
                   ]}
                   onChange={(e) => setValue(e.target.value)}
                   onSubmit={async (e) => {
@@ -2043,7 +2283,7 @@ function ChatModal({
                     if (!q || sending) return
                     setValue('')
                     setSending(true)
-                    await onAsk(q)
+                    await onAsk(q, scanLimit)
                     setSending(false)
                   }}
                 />
@@ -2056,7 +2296,7 @@ function ChatModal({
                   if (!q) return
                   setValue('')
                   setSending(true)
-                  await onAsk(q)
+                  await onAsk(q, scanLimit)
                   setSending(false)
                 }}
                 title="Send"
@@ -2065,7 +2305,6 @@ function ChatModal({
                 <Send className="size-4" />
               </button>
             </div>
-          </div>
         </div>
       </div>
     </div>
@@ -2184,9 +2423,11 @@ function DetailSkeleton() {
 function ComposeModal({
   onClose,
   onSend,
+  profile,
 }: {
   onClose: () => void
   onSend: (payload: { to: string; cc?: string; bcc?: string; subject: string; body: string; attachments?: Array<{ filename: string; contentType?: string; dataBase64: string }> }) => Promise<void>
+  profile: UserProfile | null
 }) {
   const [to, setTo] = useState('')
   const [suggestions, setSuggestions] = useState<Array<{ name: string; email: string }>>([])
@@ -2211,7 +2452,9 @@ function ComposeModal({
     // 2) Refresh contacts in the background
     ;(async () => {
       try {
-        const r = await fetch(`${API_BASE}/api/gmail/contacts?limit=600`, { credentials: 'include' })
+        const provider = profile?.provider || 'google'
+        const apiPrefix = provider === 'microsoft' ? '/api/outlook' : '/api/gmail'
+        const r = await fetch(`${API_BASE}${apiPrefix}/contacts?limit=600`, { credentials: 'include' })
         if (r.ok) {
           const j = await r.json()
           const list = (j.contacts || []).map((c: any) => ({ name: c.name, email: c.email }))
@@ -2220,7 +2463,7 @@ function ComposeModal({
           return
         }
         // Fallback: build from recent messages
-        const r2 = await fetch(`${API_BASE}/api/gmail/messages?limit=200`, { credentials: 'include' })
+        const r2 = await fetch(`${API_BASE}${apiPrefix}/messages?limit=200`, { credentials: 'include' })
         if (!r2.ok) return
         const j2 = await r2.json()
         const set = new Map<string, { name: string; email: string }>()
@@ -2245,7 +2488,7 @@ function ComposeModal({
         try { localStorage.setItem('invoxus_contacts_cache_v1', JSON.stringify(list)) } catch {}
       } catch {}
     })()
-  }, [])
+  }, [profile])
 
   const preprocessed = useMemo(() => {
     return suggestions.map((c) => ({ name: c.name, email: c.email, ln: c.name.toLowerCase(), le: c.email.toLowerCase() })) as Array<{ name: string; email: string; ln: string; le: string }>
