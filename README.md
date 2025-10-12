@@ -1,3 +1,6 @@
+<img width="1857" height="909" alt="image" src="https://github.com/user-attachments/assets/96b3405c-e218-4457-8732-547f95c2f10a" />
+
+
 Invoxus – Your AI Email Co‑Pilot
 
 Skip the inbox grind. Invoxus helps you process mail in minutes, not hours: triage what matters, draft replies, and clear the clutter with safe AI.
