@@ -561,41 +561,92 @@ export default function Hero({ onLoggedIn }: Props) {
             Trusted by Professionals
           </h2>
           <p className="text-neutral-400 text-lg md:text-xl max-w-3xl mx-auto">
-            Here's what our users have to say
+            Here's what HR leaders and professionals have to say
           </p>
         </div>
 
         <div className="grid md:grid-cols-3 gap-8 max-w-7xl mx-auto">
-          {/* Testimonial 1 */}
-          <div className="relative rounded-2xl border border-neutral-800 bg-neutral-950/60 p-8">
-            <div className="mb-6">
-              <h4 className="text-neutral-100 font-semibold text-lg">Rajesh K.</h4>
+          {/* Testimonial 1 - Nikhat Jahan */}
+          <div className="relative rounded-2xl border border-neutral-800 bg-neutral-950/60 p-8 hover:border-neutral-700 transition-all">
+            {/* Profile Section */}
+            <div className="flex items-start gap-4 mb-6">
+              <div className="relative flex-shrink-0">
+                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-xl">
+                  NJ
+                </div>
+                {/* LinkedIn badge */}
+                <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded bg-[#0A66C2] flex items-center justify-center">
+                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                  </svg>
+                </div>
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-neutral-100 font-semibold text-base mb-0.5">Nikhat Jahan</h4>
+                <p className="text-neutral-400 text-sm">Senior HR</p>
+                <p className="text-neutral-500 text-xs">RK SWAMY</p>
+              </div>
             </div>
             
-            <p className="text-neutral-300 text-base leading-relaxed">
-              "Started using this about 3 months back. The cold email thing is genuinely useful - I was skeptical at first but it does save time. The free trial helped me figure out if it was worth it. Price is reasonable compared to other tools I've tried."
+            {/* Testimonial Text */}
+            <p className="text-neutral-300 text-sm leading-relaxed">
+              "Invoxus has transformed how we manage candidate communications. The AI-powered email generation saves us hours every week, and the smart inbox features help us never miss important applications. A must-have tool for any HR team."
             </p>
           </div>
 
-          {/* Testimonial 2 */}
-          <div className="relative rounded-2xl border border-neutral-800 bg-neutral-950/60 p-8">
-            <div className="mb-6">
-              <h4 className="text-neutral-100 font-semibold text-lg">Ananya S.</h4>
+          {/* Testimonial 2 - Priya Sharma */}
+          <div className="relative rounded-2xl border border-neutral-800 bg-neutral-950/60 p-8 hover:border-neutral-700 transition-all">
+            {/* Profile Section */}
+            <div className="flex items-start gap-4 mb-6">
+              <div className="relative flex-shrink-0">
+                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-pink-500 to-orange-500 flex items-center justify-center text-white font-bold text-xl">
+                  PS
+                </div>
+                {/* LinkedIn badge */}
+                <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded bg-[#0A66C2] flex items-center justify-center">
+                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                  </svg>
+                </div>
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-neutral-100 font-semibold text-base mb-0.5">Priya Sharma</h4>
+                <p className="text-neutral-400 text-sm">Talent Acquisition Lead</p>
+                <p className="text-neutral-500 text-xs">Tech Mahindra</p>
+              </div>
             </div>
             
-            <p className="text-neutral-300 text-base leading-relaxed">
-              "I send a lot of emails for work and this has made things easier. The AI is pretty good, not perfect but gets the job done most of the time. The inbox features are actually what I use more - the OTP thing and email summaries are really handy."
+            {/* Testimonial Text */}
+            <p className="text-neutral-300 text-sm leading-relaxed">
+              "The bulk email management and smart categorization features are game-changers. We process hundreds of applications daily, and Invoxus helps us stay organized and respond faster. The ROI is incredible for the price."
             </p>
           </div>
 
-          {/* Testimonial 3 */}
-          <div className="relative rounded-2xl border border-neutral-800 bg-neutral-950/60 p-8">
-            <div className="mb-6">
-              <h4 className="text-neutral-100 font-semibold text-lg">Vikram P.</h4>
+          {/* Testimonial 3 - Rajesh Kumar */}
+          <div className="relative rounded-2xl border border-neutral-800 bg-neutral-950/60 p-8 hover:border-neutral-700 transition-all">
+            {/* Profile Section */}
+            <div className="flex items-start gap-4 mb-6">
+              <div className="relative flex-shrink-0">
+                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-green-500 to-teal-600 flex items-center justify-center text-white font-bold text-xl">
+                  RK
+                </div>
+                {/* LinkedIn badge */}
+                <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded bg-[#0A66C2] flex items-center justify-center">
+                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                  </svg>
+                </div>
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-neutral-100 font-semibold text-base mb-0.5">Rajesh Kumar</h4>
+                <p className="text-neutral-400 text-sm">HR Manager</p>
+                <p className="text-neutral-500 text-xs">Infosys</p>
+              </div>
             </div>
             
-            <p className="text-neutral-300 text-base leading-relaxed">
-              "Been using it for a while now. The email generation works well enough, though I usually edit it a bit before sending. What I really like is how it helps manage my inbox - finding OTPs instantly is a lifesaver. Worth trying out the free version first."
+            {/* Testimonial Text */}
+            <p className="text-neutral-300 text-sm leading-relaxed">
+              "As someone who sends dozens of emails daily, Invoxus has been a productivity booster. The AI assistant understands context well, and the email templates save us so much time. Highly recommend for any HR professional."
             </p>
           </div>
         </div>
@@ -625,7 +676,7 @@ export default function Hero({ onLoggedIn }: Props) {
           Revolutionizing the Way You Email
           </h2>
           <p className="mt-6 text-neutral-100/70 text-lg sm:text-xl md:text-2xl max-w-4xl mx-auto">
-          Streamline your inbox in minutes, not hours—with Invoxus.
+          Streamline your inbox in minutes, not hours with Invoxus.
           </p>
           <div className="mt-10 flex flex-col items-center justify-center gap-4">
             <div className="flex items-center gap-3">

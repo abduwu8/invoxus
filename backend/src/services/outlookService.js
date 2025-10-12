@@ -15,26 +15,69 @@ class OutlookService {
   /**
    * Make authenticated request to Microsoft Graph API
    */
-  async makeRequest(method, endpoint, data = null) {
-    try {
-      const config = {
-        method,
-        url: `${this.graphEndpoint}${endpoint}`,
-        headers: {
-          Authorization: `Bearer ${this.accessToken}`,
-          'Content-Type': 'application/json',
-        },
-      };
+  async makeRequest(method, endpoint, data = null, retries = 3) {
+    let lastError;
+    
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        const config = {
+          method,
+          url: `${this.graphEndpoint}${endpoint}`,
+          headers: {
+            Authorization: `Bearer ${this.accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          timeout: 30000, // 30 second timeout
+        };
 
-      if (data) {
-        config.data = data;
+        if (data) {
+          config.data = data;
+        }
+
+        const response = await axios(config);
+        return response.data;
+      } catch (error) {
+        lastError = error;
+        const statusCode = error.response?.status;
+        
+        console.error(`Outlook API error (attempt ${attempt}/${retries}):`, {
+          endpoint,
+          status: statusCode,
+          message: error.message
+        });
+        
+        // Don't retry on authentication errors
+        if (statusCode === 401 || statusCode === 403) {
+          throw new Error(`Authentication error: ${error.response?.data?.error?.message || 'Invalid credentials'}`);
+        }
+        
+        // Don't retry on client errors (except rate limits)
+        if (statusCode >= 400 && statusCode < 500 && statusCode !== 429) {
+          throw new Error(error.response?.data?.error?.message || error.message || 'Request failed');
+        }
+        
+        // Retry on server errors and rate limits with exponential backoff
+        if (attempt < retries && (statusCode >= 500 || statusCode === 429)) {
+          const delay = Math.min(1000 * Math.pow(2, attempt), 10000);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          continue;
+        }
+        
+        // If we've exhausted retries, throw the last error
+        if (attempt === retries) {
+          break;
+        }
       }
-
-      const response = await axios(config);
-      return response.data;
-    } catch (error) {
-      console.error(`Error making Graph API request to ${endpoint}:`, error.response?.data || error.message);
-      throw error;
+    }
+    
+    // If we get here, all retries failed
+    const statusCode = lastError?.response?.status;
+    if (statusCode >= 500) {
+      throw new Error('Microsoft email service temporarily unavailable. Please try again later.');
+    } else if (statusCode === 429) {
+      throw new Error('Rate limit exceeded. Please try again in a few minutes.');
+    } else {
+      throw new Error(lastError?.response?.data?.error?.message || lastError?.message || 'Request failed');
     }
   }
 
@@ -178,7 +221,7 @@ class OutlookService {
 
       return { success: true };
     } catch (error) {
-      console.error('Error sending Outlook email:', error);
+      console.error('Error sending Outlook email:', error.message);
       throw error;
     }
   }

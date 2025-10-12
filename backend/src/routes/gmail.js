@@ -114,7 +114,12 @@ function extractSenderEmail(fromHeader = '') {
 router.get('/messages', async (req, res) => {
   try {
     const tokens = req.session && req.session.tokens;
-    if (!tokens) return res.status(401).json({ error: 'Not authenticated' });
+    if (!tokens) {
+      return res.status(401).json({ 
+        error: 'Not authenticated',
+        message: 'Please log in to access your emails'
+      });
+    }
 
     const oauth2Client = createOAuthClientFromSession(tokens);
 
@@ -134,78 +139,141 @@ router.get('/messages', async (req, res) => {
     let remaining = targetCount;
     let pageToken = undefined;
     const messagesBasic = [];
+    
     do {
       const pageSize = Math.min(500, Number.isFinite(remaining) ? remaining : 500);
-      const page = await gmail.users.messages.list({ userId: 'me', labelIds, q, maxResults: pageSize, pageToken });
-      const batch = page.data.messages || [];
-      messagesBasic.push(...batch);
-      pageToken = page.data.nextPageToken;
-      if (Number.isFinite(remaining)) remaining -= batch.length;
+      
+      try {
+        const page = await gmail.users.messages.list({ 
+          userId: 'me', 
+          labelIds, 
+          q, 
+          maxResults: pageSize, 
+          pageToken 
+        });
+        
+        const batch = page.data.messages || [];
+        messagesBasic.push(...batch);
+        pageToken = page.data.nextPageToken;
+        if (Number.isFinite(remaining)) remaining -= batch.length;
+      } catch (apiError) {
+        console.error('Gmail API error during list:', apiError.message);
+        if (apiError?.response?.status === 401) {
+          return res.status(401).json({ 
+            error: 'Authentication expired',
+            message: 'Your Gmail session has expired. Please log in again.'
+          });
+        }
+        throw apiError;
+      }
     } while (pageToken && (!Number.isFinite(remaining) || remaining > 0));
 
     const details = await Promise.all(
       messagesBasic.map(async (m) => {
-        const { data } = await gmail.users.messages.get({
-          userId: 'me',
-          id: m.id,
-          format: summarize ? 'full' : 'metadata',
-          metadataHeaders: summarize ? undefined : ['Subject', 'From', 'Date'],
-        });
+        try {
+          const { data } = await gmail.users.messages.get({
+            userId: 'me',
+            id: m.id,
+            format: summarize ? 'full' : 'metadata',
+            metadataHeaders: summarize ? undefined : ['Subject', 'From', 'Date'],
+          });
 
-        const headers = Object.fromEntries((data.payload?.headers || []).map((h) => [h.name, h.value]));
-        const item = {
-          id: m.id,
-          threadId: data.threadId,
-          subject: headers['Subject'] || '',
-          from: headers['From'] || '',
-          date: headers['Date'] || '',
-          snippet: data.snippet || '',
-          unread: Array.isArray(data.labelIds) ? data.labelIds.includes('UNREAD') : undefined,
-          isStarred: Array.isArray(data.labelIds) ? data.labelIds.includes('STARRED') : undefined,
-        };
+          const headers = Object.fromEntries((data.payload?.headers || []).map((h) => [h.name, h.value]));
+          const item = {
+            id: m.id,
+            threadId: data.threadId,
+            subject: headers['Subject'] || '',
+            from: headers['From'] || '',
+            date: headers['Date'] || '',
+            snippet: data.snippet || '',
+            unread: Array.isArray(data.labelIds) ? data.labelIds.includes('UNREAD') : undefined,
+            isStarred: Array.isArray(data.labelIds) ? data.labelIds.includes('STARRED') : undefined,
+          };
 
-        if (summarize) {
-          try {
-            const { bodyHtml, bodyText } = extractBody(data.payload);
-            const plain = bodyText || htmlToText(bodyHtml || '', { wordwrap: false });
-            const groqApiKey = process.env.GROQ_API_KEY;
-            if (groqApiKey) {
-              const groq = new Groq({ apiKey: groqApiKey });
-              const prompt = `Summarize and classify importance. JSON only with keys: summary (<=40 words), importance (high|medium|low).\nSubject: ${item.subject}\nFrom: ${item.from}\nDate: ${item.date}\nBody: ${plain.slice(0, 6000)}`;
-              const completion = await groq.chat.completions.create({
-                model: 'openai/gpt-oss-20b',
-                messages: [
-                  { role: 'system', content: 'Return strict JSON only.' },
-                  { role: 'user', content: prompt },
-                ],
-                temperature: 0.2,
-                max_tokens: 200,
-              });
-              const text = completion.choices?.[0]?.message?.content || '{}';
-              try {
-                const j = JSON.parse(text);
-                item.summary = j.summary;
-                item.importance = j.importance;
-              } catch {
-                item.summary = text.trim().slice(0, 160);
-                item.importance = 'medium';
+          if (summarize) {
+            try {
+              const { bodyHtml, bodyText } = extractBody(data.payload);
+              const plain = bodyText || htmlToText(bodyHtml || '', { wordwrap: false });
+              const groqApiKey = process.env.GROQ_API_KEY;
+              if (groqApiKey) {
+                const groq = new Groq({ apiKey: groqApiKey });
+                const prompt = `Summarize and classify importance. JSON only with keys: summary (<=40 words), importance (high|medium|low).\nSubject: ${item.subject}\nFrom: ${item.from}\nDate: ${item.date}\nBody: ${plain.slice(0, 6000)}`;
+                const completion = await groq.chat.completions.create({
+                  model: 'openai/gpt-oss-20b',
+                  messages: [
+                    { role: 'system', content: 'Return strict JSON only.' },
+                    { role: 'user', content: prompt },
+                  ],
+                  temperature: 0.2,
+                  max_tokens: 200,
+                });
+                const text = completion.choices?.[0]?.message?.content || '{}';
+                try {
+                  const j = JSON.parse(text);
+                  item.summary = j.summary;
+                  item.importance = j.importance;
+                } catch {
+                  item.summary = text.trim().slice(0, 160);
+                  item.importance = 'medium';
+                }
               }
-            } else {
-              // No API key; skip summarization gracefully
+            } catch (e) {
+              // Skip summarization errors per-message
             }
-          } catch (e) {
-            // Skip summarization errors per-message
           }
-        }
 
-        return item;
+          return item;
+        } catch (messageError) {
+          console.error('Error fetching message details:', m.id, messageError.message);
+          // Return minimal info if we can't get full details
+          return {
+            id: m.id,
+            threadId: m.threadId || '',
+            subject: 'Error loading message',
+            from: '',
+            date: '',
+            snippet: 'Unable to load message details',
+            unread: false,
+            isStarred: false,
+          };
+        }
       })
     );
 
     res.json({ messages: details });
   } catch (err) {
-    console.error('Gmail list error:', err?.response?.data || err);
-    res.status(500).json({ error: 'Failed to fetch messages' });
+    console.error('Gmail list error:', err);
+    console.error('Error details:', {
+      message: err?.message,
+      stack: err?.stack,
+      response: err?.response?.data
+    });
+    
+    // Provide more specific error messages
+    let errorMessage = 'Failed to fetch messages';
+    let statusCode = 500;
+    
+    if (err?.response?.status === 401 || err?.code === 'invalid_grant') {
+      errorMessage = 'Authentication expired. Please log in again.';
+      statusCode = 401;
+    } else if (err?.response?.status === 403) {
+      errorMessage = 'Permission denied. Please check your Gmail permissions.';
+      statusCode = 403;
+    } else if (err?.response?.status === 429) {
+      errorMessage = 'Rate limit exceeded. Please try again in a few minutes.';
+      statusCode = 429;
+    } else if (err?.response?.status >= 500) {
+      errorMessage = 'Gmail service temporarily unavailable. Please try again later.';
+      statusCode = 503;
+    } else if (err?.message) {
+      errorMessage = err.message;
+    }
+    
+    res.status(statusCode).json({ 
+      error: 'Failed to fetch messages',
+      message: errorMessage,
+      details: process.env.NODE_ENV === 'development' ? err?.message : undefined
+    });
   }
 });
 

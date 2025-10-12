@@ -62,7 +62,32 @@ router.get('/messages', async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching Outlook messages:', error);
-    res.status(500).json({ error: 'Failed to fetch messages' });
+    
+    // Provide more specific error messages
+    let errorMessage = 'Failed to fetch messages';
+    let statusCode = 500;
+    
+    if (error?.message?.includes('auth') || error?.message?.includes('Authentication')) {
+      errorMessage = 'Authentication expired. Please log in again.';
+      statusCode = 401;
+    } else if (error?.message?.includes('Permission') || error?.message?.includes('denied')) {
+      errorMessage = 'Permission denied. Please check your Outlook permissions.';
+      statusCode = 403;
+    } else if (error?.message?.includes('Rate limit')) {
+      errorMessage = 'Rate limit exceeded. Please try again in a few minutes.';
+      statusCode = 429;
+    } else if (error?.message?.includes('temporarily unavailable')) {
+      errorMessage = 'Outlook service temporarily unavailable. Please try again later.';
+      statusCode = 503;
+    } else if (error?.message) {
+      errorMessage = error.message;
+    }
+    
+    res.status(statusCode).json({ 
+      error: 'Failed to fetch messages',
+      message: errorMessage,
+      details: process.env.NODE_ENV === 'development' ? error?.message : undefined
+    });
   }
 });
 

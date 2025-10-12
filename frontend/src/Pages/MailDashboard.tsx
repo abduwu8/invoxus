@@ -214,7 +214,18 @@ export default function MailDashboard() {
       }
 
       const response = await fetch(url, { credentials: 'include' });
-      if (!response.ok) throw new Error(`Failed: ${response.status}`);
+      
+      if (!response.ok) {
+        // Try to get error message from response
+        let errorMessage = `Failed to fetch emails (${response.status})`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (e) {
+          // Couldn't parse error response
+        }
+        throw new Error(errorMessage);
+      }
       
       const json = await response.json();
       
@@ -248,7 +259,9 @@ export default function MailDashboard() {
       }
       
     } catch (e: any) {
-      setError(e?.message || 'Failed to refresh emails');
+      const errorMessage = e?.message || 'Failed to refresh emails';
+      setError(errorMessage);
+      import('sonner').then(({ toast }) => toast.error(errorMessage));
     } finally {
       setLoading(false);
     }
@@ -1477,22 +1490,42 @@ export default function MailDashboard() {
           onGenerate={handleGenerate}
           usage={usage}
           onSend={async (payload: { to: string; subject: string; body: string; resumeFile?: File }) => {
-            // Create FormData for file upload
-            const formData = new FormData();
-            formData.append('to', payload.to);
-            formData.append('subject', payload.subject);
-            formData.append('body', payload.body);
-            if (payload.resumeFile) {
-              formData.append('resumeFile', payload.resumeFile);
+            try {
+              // Create FormData for file upload
+              const formData = new FormData();
+              formData.append('to', payload.to);
+              formData.append('subject', payload.subject);
+              formData.append('body', payload.body);
+              if (payload.resumeFile) {
+                formData.append('resumeFile', payload.resumeFile);
+              }
+              
+              const r = await fetch(`${API_BASE}/api/cold-email/send`, {
+                method: 'POST',
+                credentials: 'include',
+                body: formData,
+              });
+              
+              if (!r.ok) {
+                // Try to parse error message from response
+                let errorMessage = 'Failed to send email';
+                try {
+                  const errorData = await r.json();
+                  errorMessage = errorData.message || errorData.error || errorMessage;
+                } catch (e) {
+                  // Couldn't parse error response
+                }
+                
+                // Show specific error message
+                import('sonner').then(({ toast }) => toast.error(errorMessage));
+                throw new Error(errorMessage);
+              }
+              
+              return true;
+            } catch (error: any) {
+              // Error already shown via toast
+              throw error;
             }
-            
-            const r = await fetch(`${API_BASE}/api/cold-email/send`, {
-              method: 'POST',
-              credentials: 'include',
-              body: formData,
-            })
-            if (!r.ok) throw new Error('Failed to send')
-            return true
           }}
         />
       ) : null}

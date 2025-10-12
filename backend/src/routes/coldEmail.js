@@ -995,22 +995,69 @@ Return ONLY this JSON:
 router.post('/send', upload.single('resumeFile'), async (req, res) => {
   try {
     // Check if user is authenticated
-    if (!req.session) return res.status(401).json({ error: 'Not authenticated' });
+    if (!req.session) {
+      return res.status(401).json({ 
+        error: 'Not authenticated',
+        message: 'Your session has expired. Please log in again.'
+      });
+    }
+    
     const user = req.session.userProfile;
+    if (!user) {
+      return res.status(401).json({ 
+        error: 'Not authenticated',
+        message: 'User profile not found. Please log in again.'
+      });
+    }
+    
     const provider = user?.provider || 'google';
     
     // Gmail requires tokens, Outlook requires user profile
     if (provider === 'google' && !req.session.tokens) {
-      return res.status(401).json({ error: 'Not authenticated' });
+      return res.status(401).json({ 
+        error: 'Not authenticated',
+        message: 'Gmail authentication expired. Please log in again.'
+      });
     }
     if (provider === 'microsoft' && !user?.id) {
-      return res.status(401).json({ error: 'Not authenticated' });
+      return res.status(401).json({ 
+        error: 'Not authenticated',
+        message: 'Outlook authentication expired. Please log in again.'
+      });
     }
     
     const { to, subject = 'Hello', body = '' } = req.body || {};
     const resumeFile = req.file;
     
-    if (!to) return res.status(400).json({ error: 'Missing recipient email (to)' });
+    if (!to || !to.trim()) {
+      return res.status(400).json({ 
+        error: 'Missing recipient email',
+        message: 'Please provide a valid recipient email address'
+      });
+    }
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(to)) {
+      return res.status(400).json({ 
+        error: 'Invalid email address',
+        message: 'Please provide a valid email address format'
+      });
+    }
+    
+    if (!subject || !subject.trim()) {
+      return res.status(400).json({ 
+        error: 'Missing email subject',
+        message: 'Please provide an email subject'
+      });
+    }
+    
+    if (!body || !body.trim()) {
+      return res.status(400).json({ 
+        error: 'Missing email body',
+        message: 'Please provide email content'
+      });
+    }
 
     // Use the unified EmailProvider
     const emailProvider = new EmailProvider(req.session);
@@ -1031,10 +1078,42 @@ router.post('/send', upload.single('resumeFile'), async (req, res) => {
       body: body || 'Hello',
     });
     
-    res.json({ sent: true });
+    res.json({ 
+      sent: true,
+      message: 'Email sent successfully',
+      to,
+      subject
+    });
   } catch (err) {
-    console.error('Cold email send error:', err?.response?.data || err);
-    res.status(500).json({ error: 'Failed to send email' });
+    console.error('Cold email send error:', err);
+    console.error('Error details:', {
+      message: err?.message,
+      stack: err?.stack,
+      response: err?.response?.data
+    });
+    
+    // Provide more specific error messages
+    let errorMessage = 'Failed to send email';
+    let statusCode = 500;
+    
+    if (err?.response?.status === 401 || err?.message?.includes('auth')) {
+      errorMessage = 'Authentication failed. Please log in again.';
+      statusCode = 401;
+    } else if (err?.response?.status === 403) {
+      errorMessage = 'Permission denied. Please check your email account permissions.';
+      statusCode = 403;
+    } else if (err?.response?.status === 429) {
+      errorMessage = 'Too many requests. Please wait a moment and try again.';
+      statusCode = 429;
+    } else if (err?.message) {
+      errorMessage = err.message;
+    }
+    
+    res.status(statusCode).json({ 
+      error: 'Failed to send email',
+      message: errorMessage,
+      details: process.env.NODE_ENV === 'development' ? err?.message : undefined
+    });
   }
 });
 

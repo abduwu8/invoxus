@@ -104,36 +104,58 @@ class EmailProvider {
   async sendEmail(emailData) {
     const { to, subject, body, cc, bcc } = emailData;
 
-    if (this.provider === 'microsoft') {
-      const service = await this.getService();
-      await service.sendEmail({ to, subject, body, cc, bcc });
-      return { success: true };
-    } else {
-      // Gmail
-      const gmail = await this.getService();
-      const headers = [
-        `To: ${to}`,
-        cc ? `Cc: ${cc}` : '',
-        bcc ? `Bcc: ${bcc}` : '',
-        `Subject: ${subject}`,
-        'Content-Type: text/plain; charset="UTF-8"',
-      ]
-        .filter(Boolean)
-        .join('\r\n');
-      
-      const raw = `${headers}\r\n\r\n${body}`;
-      const encodedMessage = Buffer.from(raw)
-        .toString('base64')
-        .replace(/\+/g, '-')
-        .replace(/\//g, '_')
-        .replace(/=+$/, '');
+    try {
+      if (this.provider === 'microsoft') {
+        const service = await this.getService();
+        await service.sendEmail({ to, subject, body, cc, bcc });
+        return { success: true, provider: 'microsoft' };
+      } else {
+        // Gmail
+        const gmail = await this.getService();
+        
+        const headers = [
+          `To: ${to}`,
+          cc ? `Cc: ${cc}` : '',
+          bcc ? `Bcc: ${bcc}` : '',
+          `Subject: ${subject}`,
+          'Content-Type: text/plain; charset="UTF-8"',
+        ]
+          .filter(Boolean)
+          .join('\r\n');
+        
+        const raw = `${headers}\r\n\r\n${body}`;
+        const encodedMessage = Buffer.from(raw)
+          .toString('base64')
+          .replace(/\+/g, '-')
+          .replace(/\//g, '_')
+          .replace(/=+$/, '');
 
-      await gmail.users.messages.send({
-        userId: 'me',
-        requestBody: { raw: encodedMessage },
+        const response = await gmail.users.messages.send({
+          userId: 'me',
+          requestBody: { raw: encodedMessage },
+        });
+
+        return { success: true, provider: 'google', messageId: response.data.id };
+      }
+    } catch (error) {
+      console.error('Error sending email:', {
+        provider: this.provider,
+        error: error.message,
+        status: error?.response?.status
       });
-
-      return { success: true };
+      
+      // Enhance error message based on error type
+      if (error?.response?.status === 401 || error?.code === 'invalid_grant') {
+        throw new Error('Authentication expired. Please log in again.');
+      } else if (error?.response?.status === 403) {
+        throw new Error('Permission denied. Please check your email account permissions.');
+      } else if (error?.response?.status === 429) {
+        throw new Error('Rate limit exceeded. Please try again in a few minutes.');
+      } else if (error?.response?.status >= 500) {
+        throw new Error('Email service temporarily unavailable. Please try again later.');
+      } else {
+        throw new Error(error.message || 'Failed to send email');
+      }
     }
   }
 
